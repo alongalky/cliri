@@ -1,5 +1,9 @@
 package com.iota.iri;
 
+import java.security.SecureRandom;
+import java.util.Date;
+import java.util.List;
+
 import com.iota.iri.conf.IotaConfig;
 import com.iota.iri.conf.TipSelConfig;
 import com.iota.iri.controllers.TipsViewModel;
@@ -8,19 +12,35 @@ import com.iota.iri.network.Node;
 import com.iota.iri.network.TransactionRequester;
 import com.iota.iri.network.UDPReceiver;
 import com.iota.iri.network.replicator.Replicator;
-import com.iota.iri.service.TipsSolidifier;
-import com.iota.iri.service.stats.TransactionStatsPublisher;
 import com.iota.iri.service.DatabaseRecycler;
-import com.iota.iri.service.tipselection.*;
-import com.iota.iri.service.tipselection.impl.*;
-import com.iota.iri.storage.*;
+import com.iota.iri.service.TipsSolidifier;
+import com.iota.iri.service.ledger.impl.LedgerServiceImpl;
+import com.iota.iri.service.snapshot.impl.LocalSnapshotManagerImpl;
+import com.iota.iri.service.snapshot.impl.SnapshotProviderImpl;
+import com.iota.iri.service.snapshot.impl.SnapshotServiceImpl;
+import com.iota.iri.service.stats.TransactionStatsPublisher;
+import com.iota.iri.service.tipselection.EntryPointSelector;
+import com.iota.iri.service.tipselection.RatingCalculator;
+import com.iota.iri.service.tipselection.ReferenceChecker;
+import com.iota.iri.service.tipselection.StartingTipSelector;
+import com.iota.iri.service.tipselection.TailFinder;
+import com.iota.iri.service.tipselection.TipSelector;
+import com.iota.iri.service.tipselection.Walker;
+import com.iota.iri.service.tipselection.impl.ConnectedComponentsStartingTipSelector;
+import com.iota.iri.service.tipselection.impl.CumulativeWeightCalculator;
+import com.iota.iri.service.tipselection.impl.EntryPointSelectorCumulativeWeightThreshold;
+import com.iota.iri.service.tipselection.impl.ReferenceCheckerImpl;
+import com.iota.iri.service.tipselection.impl.TailFinderImpl;
+import com.iota.iri.service.tipselection.impl.TipSelectorImpl;
+import com.iota.iri.service.tipselection.impl.WalkerAlpha;
+import com.iota.iri.storage.Indexable;
+import com.iota.iri.storage.Persistable;
+import com.iota.iri.storage.PersistenceProvider;
+import com.iota.iri.storage.Tangle;
+import com.iota.iri.storage.ZmqPublishProvider;
 import com.iota.iri.storage.rocksDB.RocksDBPersistenceProvider;
 import com.iota.iri.utils.Pair;
 import com.iota.iri.zmq.MessageQ;
-
-import java.security.SecureRandom;
-import java.util.List;
-import java.util.Date;
 
 import org.apache.commons.lang3.NotImplementedException;
 import org.slf4j.Logger;
@@ -61,6 +81,15 @@ public class Iota {
     private static final Logger log = LoggerFactory.getLogger(Iota.class);
 
     public final LedgerValidator ledgerValidator;
+
+
+
+    public final SnapshotProviderImpl snapshotProvider;
+
+    public final SnapshotServiceImpl snapshotService;
+
+    public final LedgerServiceImpl ledgerService = new LedgerServiceImpl();
+
     public final Tangle tangle;
     public final TransactionValidator transactionValidator;
     public final TipsSolidifier tipsSolidifier;
@@ -96,6 +125,26 @@ public class Iota {
         tipsSelector = createTipSelector(configuration);
         transactionStatsPublisher = new TransactionStatsPublisher(tangle, tipsViewModel, tipsSelector, messageQ);
         databaseRecycler = new DatabaseRecycler(transactionValidator, transactionRequester, tipsViewModel, tangle);
+
+        ///
+        // new refactored instances
+        snapshotProvider = new SnapshotProviderImpl().init();
+        snapshotService = new SnapshotServiceImpl().init(tangle, snapshotProvider, spentAddressesService, spentAddressesProvider, configuration);
+        localSnapshotManager = configuration.getLocalSnapshotsEnabled()
+                             ? new LocalSnapshotManagerImpl()
+                             : null;
+        milestoneService = new MilestoneServiceImpl();
+        latestMilestoneTracker = new LatestMilestoneTrackerImpl();
+        latestSolidMilestoneTracker = new LatestSolidMilestoneTrackerImpl();
+        seenMilestonesRetriever = new SeenMilestonesRetrieverImpl();
+        milestoneSolidifier = new MilestoneSolidifierImpl();
+        transactionPruner = configuration.getLocalSnapshotsEnabled() && configuration.getLocalSnapshotsPruningEnabled()
+                          ? new AsyncTransactionPruner()
+                          : null;
+        transactionRequesterWorker = new TransactionRequesterWorkerImpl();
+        ///
+
+        ledgerService.init(tangle, snapshotProvider, snapshotService, bundleValidator);
     }
 
     /**
@@ -162,7 +211,12 @@ public class Iota {
         transactionValidator.shutdown();
         tangle.shutdown();
         messageQ.shutdown();
+
+        
+        // free the resources of the snapshot provider last because all other instances need it
+        snapshotProvider.shutdown();
     }
+`    }
 
     private void initializeTangle() {
         switch (configuration.getMainDb()) {

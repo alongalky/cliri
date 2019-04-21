@@ -1,14 +1,10 @@
 package com.iota.iri.service.ledger.impl;
-
 import com.iota.iri.BundleValidator;
-import com.iota.iri.controllers.MilestoneViewModel;
 import com.iota.iri.controllers.StateDiffViewModel;
 import com.iota.iri.controllers.TransactionViewModel;
 import com.iota.iri.model.Hash;
 import com.iota.iri.service.ledger.LedgerException;
 import com.iota.iri.service.ledger.LedgerService;
-import com.iota.iri.service.milestone.MilestoneService;
-import com.iota.iri.service.snapshot.Snapshot;
 import com.iota.iri.service.snapshot.SnapshotException;
 import com.iota.iri.service.snapshot.SnapshotProvider;
 import com.iota.iri.service.snapshot.SnapshotService;
@@ -39,11 +35,6 @@ public class LedgerServiceImpl implements LedgerService {
      */
     private SnapshotService snapshotService;
 
-    /**
-     * Holds a reference to the service instance containing the business logic of the milestone package.<br />
-     */
-    private MilestoneService milestoneService;
-
     private SpentAddressesService spentAddressesService;
 
     private BundleValidator bundleValidator;
@@ -63,17 +54,15 @@ public class LedgerServiceImpl implements LedgerService {
      * @param tangle Tangle object which acts as a database interface
      * @param snapshotProvider snapshot provider which gives us access to the relevant snapshots
      * @param snapshotService service instance of the snapshot package that gives us access to packages' business logic
-     * @param milestoneService contains the important business logic when dealing with milestones
      * @return the initialized instance itself to allow chaining
      */
     public LedgerServiceImpl init(Tangle tangle, SnapshotProvider snapshotProvider, SnapshotService snapshotService,
-            MilestoneService milestoneService, SpentAddressesService spentAddressesService,
+            SpentAddressesService spentAddressesService,
                                   BundleValidator bundleValidator) {
 
         this.tangle = tangle;
         this.snapshotProvider = snapshotProvider;
         this.snapshotService = snapshotService;
-        this.milestoneService = milestoneService;
         this.spentAddressesService = spentAddressesService;
         this.bundleValidator = bundleValidator;
 
@@ -83,28 +72,13 @@ public class LedgerServiceImpl implements LedgerService {
     @Override
     public void restoreLedgerState() throws LedgerException {
         try {
-            Optional<MilestoneViewModel> milestone = milestoneService.findLatestProcessedSolidMilestoneInDatabase();
-            if (milestone.isPresent()) {
-                snapshotService.replayMilestones(snapshotProvider.getLatestSnapshot(), milestone.get().index());
-            }
+        //     Optional<MilestoneViewModel> milestone = milestoneService.findLatestProcessedSolidMilestoneInDatabase();
+        //     if (milestone.isPresent()) {
+        //         snapshotService.replayMilestones(snapshotProvider.getLatestSnapshot(), milestone.get().index());
+        //     }
         } catch (Exception e) {
             throw new LedgerException("unexpected error while restoring the ledger state", e);
         }
-    }
-
-    @Override
-    public boolean applyMilestoneToLedger(MilestoneViewModel milestone) throws LedgerException {
-        if(generateStateDiff(milestone)) {
-            try {
-                snapshotService.replayMilestones(snapshotProvider.getLatestSnapshot(), milestone.index());
-            } catch (SnapshotException e) {
-                throw new LedgerException("failed to apply the balance changes to the ledger state", e);
-            }
-
-            return true;
-        }
-
-        return false;
     }
 
     @Override

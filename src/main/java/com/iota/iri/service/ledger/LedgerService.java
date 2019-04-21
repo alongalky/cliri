@@ -29,19 +29,6 @@ public interface LedgerService {
     void restoreLedgerState() throws LedgerException;
 
     /**
-     * Applies the given milestone to the ledger state.<br />
-     * <br />
-     * It first marks the transactions that were confirmed by this milestones as confirmed by setting their
-     * corresponding {@code snapshotIndex} value. Then it generates the {@link com.iota.iri.model.StateDiff} that
-     * reflects the accumulated balance changes of all these transactions and applies it to the latest Snapshot.<br />
-     *
-     * @param milestone the milestone that shall be applied
-     * @return {@code true} if the milestone could be applied to the ledger and {@code false} otherwise
-     * @throws LedgerException if anything goes wrong while modifying the ledger state
-     */
-    boolean applyMilestoneToLedger(MilestoneViewModel milestone) throws LedgerException;
-
-    /**
      * Checks the consistency of the combined balance changes of the given tips.<br />
      * <br />
      * It simply calculates the balance changes of the tips and then combines them to verify that they are leading to a
