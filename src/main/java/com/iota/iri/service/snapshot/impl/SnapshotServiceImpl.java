@@ -102,7 +102,6 @@ public class SnapshotServiceImpl implements SnapshotService {
      * @return the initialized instance itself to allow chaining
      */
     public SnapshotServiceImpl init(Tangle tangle, SnapshotProvider snapshotProvider,
-            SpentAddressesService spentAddressesService, SpentAddressesProvider spentAddressesProvider,
             SnapshotConfig config) {
 
         this.tangle = tangle;

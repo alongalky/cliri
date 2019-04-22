@@ -4,8 +4,6 @@ import com.iota.iri.SignedFiles;
 import com.iota.iri.model.Hash;
 import com.iota.iri.model.HashFactory;
 import com.iota.iri.service.snapshot.*;
-import com.iota.iri.service.spentaddresses.SpentAddressesException;
-import com.iota.iri.service.spentaddresses.SpentAddressesProvider;
 
 import java.io.*;
 import java.nio.file.Files;
@@ -93,7 +91,7 @@ public class SnapshotProviderImpl implements SnapshotProvider {
      * @return the initialized instance itself to allow chaining
      *
      */
-    public SnapshotProviderImpl init() throws SnapshotException, SpentAddressesException {
+    public SnapshotProviderImpl init() throws SnapshotException {
         loadSnapshots();
 
         return this;

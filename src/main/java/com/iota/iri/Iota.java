@@ -125,24 +125,9 @@ public class Iota {
         tipsSelector = createTipSelector(configuration);
         transactionStatsPublisher = new TransactionStatsPublisher(tangle, tipsViewModel, tipsSelector, messageQ);
         databaseRecycler = new DatabaseRecycler(transactionValidator, transactionRequester, tipsViewModel, tangle);
-
-        ///
-        // new refactored instances
         snapshotProvider = new SnapshotProviderImpl().init();
-        snapshotService = new SnapshotServiceImpl().init(tangle, snapshotProvider, spentAddressesService, spentAddressesProvider, configuration);
-        localSnapshotManager = configuration.getLocalSnapshotsEnabled()
-                             ? new LocalSnapshotManagerImpl()
-                             : null;
-        milestoneService = new MilestoneServiceImpl();
-        latestMilestoneTracker = new LatestMilestoneTrackerImpl();
-        latestSolidMilestoneTracker = new LatestSolidMilestoneTrackerImpl();
-        seenMilestonesRetriever = new SeenMilestonesRetrieverImpl();
-        milestoneSolidifier = new MilestoneSolidifierImpl();
-        transactionPruner = configuration.getLocalSnapshotsEnabled() && configuration.getLocalSnapshotsPruningEnabled()
-                          ? new AsyncTransactionPruner()
-                          : null;
+        snapshotService = new SnapshotServiceImpl().init(tangle, snapshotProvider, configuration);
         transactionRequesterWorker = new TransactionRequesterWorkerImpl();
-        ///
 
         ledgerService.init(tangle, snapshotProvider, snapshotService, bundleValidator);
     }
@@ -216,7 +201,6 @@ public class Iota {
         // free the resources of the snapshot provider last because all other instances need it
         snapshotProvider.shutdown();
     }
-`    }
 
     private void initializeTangle() {
         switch (configuration.getMainDb()) {
