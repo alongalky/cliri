@@ -9,7 +9,6 @@ import com.iota.iri.model.Hash;
 import com.iota.iri.model.HashFactory;
 import com.iota.iri.model.TransactionHash;
 import com.iota.iri.storage.Tangle;
-import com.iota.iri.zmq.MessageQ;
 import org.apache.commons.lang3.StringUtils;
 import org.apache.commons.lang3.tuple.ImmutablePair;
 import org.apache.commons.lang3.tuple.Pair;
@@ -68,12 +67,12 @@ public class Node {
     private final TipsViewModel tipsViewModel;
     private final TransactionValidator transactionValidator;
     private final TransactionRequester transactionRequester;
-    private final MessageQ messageQ;
 
     private static final SecureRandom rnd = new SecureRandom();
 
 
-    private FIFOCache<ByteBuffer, Hash> recentSeenBytes;
+    private FIFOCache<Long, Hash> recentSeenBytes;
+    private LongHashFunction recentSeenBytesHashFunction;
 
     private static AtomicLong recentSeenBytesMissCount = new AtomicLong(0L);
     private static AtomicLong recentSeenBytesHitCount = new AtomicLong(0L);
@@ -576,6 +575,19 @@ public class Node {
         sendPacketsCounter.getAndIncrement();
     }
 
+        /**
+     * Does the same as {@link #sendPacket(DatagramPacket, TransactionViewModel, Neighbor)} but defaults to using the
+     * same internal {@link #sendingPacket} as all the other methods in this class, which allows external callers to
+     * send packets that are in "sync" (sending is synchronized over the packet object) with the rest of the methods
+     * used in this class.<br />
+     *
+     * @param transactionViewModel the transaction that shall be sent
+     * @param neighbor the neighbor that should receive the packet
+     * @throws Exception if anything unexpected happens during the sending of the packet
+     */
+    public void sendPacket(TransactionViewModel transactionViewModel, Neighbor neighbor) throws Exception {
+        sendPacket(sendingPacket, transactionViewModel, neighbor);
+    
 
     /**
      * This thread picks up a new transaction from the broadcast queue and 
