@@ -62,10 +62,6 @@ public class SnapshotProviderImpl implements SnapshotProvider {
     private static SnapshotImpl builtinSnapshot = null;
 
     /**
-     * Holds Snapshot related configuration parameters.
-     */
-
-    /**
      * Internal property for the value returned by {@link SnapshotProvider#getInitialSnapshot()}.
      */
     private Snapshot initialSnapshot;
