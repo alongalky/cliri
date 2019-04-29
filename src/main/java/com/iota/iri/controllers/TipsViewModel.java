@@ -118,6 +118,13 @@ public class TipsViewModel {
         return result;
     }
 
+    /**
+     * Returns a random tip by generating a random integer within the range of the <tt>SolidTips</tt> set, and iterates
+     * through the set until a hash is returned. If there are no <tt>Solid</tt> tips available, then
+     * the genesis is returned.
+     *
+     * @return A random <tt>Solid</tt> tip if available, the genesis otherwise.
+     */
     public Hash getRandomSolidTipHash() {
         if (solidSize() == 0) {
             return Hash.NULL_HASH;
