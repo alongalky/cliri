@@ -1,9 +1,5 @@
 package com.iota.iri;
 
-import java.security.SecureRandom;
-import java.util.Date;
-import java.util.List;
-
 import com.iota.iri.conf.IotaConfig;
 import com.iota.iri.conf.TipSelConfig;
 import com.iota.iri.controllers.TipsViewModel;
@@ -11,37 +7,24 @@ import com.iota.iri.controllers.TransactionViewModel;
 import com.iota.iri.network.Node;
 import com.iota.iri.network.TransactionRequester;
 import com.iota.iri.network.UDPReceiver;
+import com.iota.iri.network.impl.TransactionRequesterWorkerImpl;
 import com.iota.iri.network.replicator.Replicator;
 import com.iota.iri.service.DatabaseRecycler;
 import com.iota.iri.service.TipsSolidifier;
 import com.iota.iri.service.ledger.impl.LedgerServiceImpl;
 import com.iota.iri.service.snapshot.impl.LocalSnapshotManagerImpl;
 import com.iota.iri.service.snapshot.impl.SnapshotProviderImpl;
-import com.iota.iri.service.snapshot.impl.SnapshotServiceImpl;
 import com.iota.iri.service.stats.TransactionStatsPublisher;
-import com.iota.iri.service.tipselection.EntryPointSelector;
-import com.iota.iri.service.tipselection.RatingCalculator;
-import com.iota.iri.service.tipselection.ReferenceChecker;
-import com.iota.iri.service.tipselection.StartingTipSelector;
-import com.iota.iri.service.tipselection.TailFinder;
-import com.iota.iri.service.tipselection.TipSelector;
-import com.iota.iri.service.tipselection.Walker;
-import com.iota.iri.service.tipselection.impl.ConnectedComponentsStartingTipSelector;
-import com.iota.iri.service.tipselection.impl.CumulativeWeightCalculator;
-import com.iota.iri.service.tipselection.impl.EntryPointSelectorCumulativeWeightThreshold;
-import com.iota.iri.service.tipselection.impl.ReferenceCheckerImpl;
-import com.iota.iri.service.tipselection.impl.TailFinderImpl;
-import com.iota.iri.service.tipselection.impl.TipSelectorImpl;
-import com.iota.iri.service.tipselection.impl.WalkerAlpha;
-import com.iota.iri.storage.Indexable;
-import com.iota.iri.storage.Persistable;
-import com.iota.iri.storage.PersistenceProvider;
-import com.iota.iri.storage.Tangle;
-import com.iota.iri.storage.ZmqPublishProvider;
+import com.iota.iri.service.tipselection.*;
+import com.iota.iri.service.tipselection.impl.*;
+import com.iota.iri.storage.*;
 import com.iota.iri.storage.rocksDB.RocksDBPersistenceProvider;
 import com.iota.iri.utils.Pair;
-import com.iota.iri.zmq.MessageQ;
 
+import java.security.SecureRandom;
+import java.util.List;
+
+import com.iota.iri.zmq.ZmqMessageQueueProvider;
 import org.apache.commons.lang3.NotImplementedException;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -83,12 +66,13 @@ public class Iota {
     public final LedgerValidator ledgerValidator;
 
 
-
     public final SnapshotProviderImpl snapshotProvider;
 
-    public final SnapshotServiceImpl snapshotService;
-
     public final LedgerServiceImpl ledgerService = new LedgerServiceImpl();
+
+    public final TransactionRequesterWorkerImpl transactionRequesterWorker;
+
+    public final BundleValidator bundleValidator;
 
     public final Tangle tangle;
     public final TransactionValidator transactionValidator;
@@ -100,36 +84,39 @@ public class Iota {
     public final Replicator replicator;
     public final IotaConfig configuration;
     public final TipsViewModel tipsViewModel;
-    public final MessageQ messageQ;
     public final TipSelector tipsSelector;
     public final DatabaseRecycler databaseRecycler;
 
     /**
-     * Creates all services needed to run an IOTA node.
+     * Initializes the latest snapshot and then creates all services needed to run an IOTA node.
      * 
+     * @throws SnapshotException If the Snapshot fails to initialize.
+     *                           This can happen if the snapshot signature is invalid or the file cannot be read.
      * @param configuration Information about how this node will be configured.
      */
-    public Iota(IotaConfig configuration) {
+    public Iota(IotaConfig configuration) throws SnapshotException {
         this.configuration = configuration;
+
+        // new refactored instances
+        snapshotProvider = new SnapshotProviderImpl();
+        transactionRequesterWorker = new TransactionRequesterWorkerImpl();
+
+        // legacy code
+        bundleValidator = new BundleValidator();
         tangle = new Tangle();
-        messageQ = MessageQ.createWith(configuration);
         tipsViewModel = new TipsViewModel(tangle);
-        transactionRequester = new TransactionRequester(tangle, messageQ);
-        transactionValidator = new TransactionValidator(tangle, tipsViewModel, transactionRequester);
-        node = new Node(tangle, transactionValidator, transactionRequester, tipsViewModel, messageQ,
+        transactionRequester = new TransactionRequester(tangle, snapshotProvider);
+        transactionValidator = new TransactionValidator(tangle, snapshotProvider, tipsViewModel, transactionRequester);
+        node = new Node(tangle, snapshotProvider, transactionValidator, transactionRequester, tipsViewModel,
                 configuration);
         replicator = new Replicator(node, configuration);
         udpReceiver = new UDPReceiver(node, configuration);
-        ledgerValidator = new LedgerValidatorImpl();
-        tipsSolidifier = new TipsSolidifier(tangle, transactionValidator, tipsViewModel);
+        tipsSolidifier = new TipsSolidifier(tangle, transactionValidator, tipsViewModel, configuration);
         tipsSelector = createTipSelector(configuration);
         transactionStatsPublisher = new TransactionStatsPublisher(tangle, tipsViewModel, tipsSelector, messageQ);
         databaseRecycler = new DatabaseRecycler(transactionValidator, transactionRequester, tipsViewModel, tangle);
-        snapshotProvider = new SnapshotProviderImpl().init();
-        snapshotService = new SnapshotServiceImpl().init(tangle, snapshotProvider, configuration);
-        transactionRequesterWorker = new TransactionRequesterWorkerImpl();
 
-        ledgerService.init(tangle, snapshotProvider, snapshotService, bundleValidator);
+        injectDependencies();
     }
 
     /**
@@ -148,9 +135,12 @@ public class Iota {
             rescanDb();
         }
 
-        if (configuration.isZmqEnabled()) {
-            transactionStatsPublisher.init();
+        if (configuration.isRevalidate()) {
+            tangle.clearColumn(com.iota.iri.model.persistables.Milestone.class);
+            tangle.clearColumn(com.iota.iri.model.StateDiff.class);
+            tangle.clearMetadata(com.iota.iri.model.persistables.Transaction.class);
         }
+
         transactionValidator.init(configuration.isTestnet(), configuration.getMwm());
         tipsSolidifier.init();
         transactionRequester.init(configuration.getpRemoveRequest());
@@ -158,6 +148,16 @@ public class Iota {
         replicator.init();
         node.init();
         databaseRecycler.init(new Date(System.currentTimeMillis()));
+        transactionRequesterWorker.start();
+    }
+
+    private void injectDependencies() throws SnapshotException {
+        //snapshot provider must be initialized first
+        //because we check whether spent addresses data exists
+        snapshotProvider.init(configuration);
+        ledgerService.init(tangle, snapshotProvider,
+            bundleValidator);
+        transactionRequesterWorker.init(tangle, transactionRequester, tipsViewModel, node);
     }
 
     private void rescanDb() throws Exception {
@@ -167,6 +167,7 @@ public class Iota {
         tangle.clearColumn(com.iota.iri.model.persistables.Approvee.class);
         tangle.clearColumn(com.iota.iri.model.persistables.ObsoleteTag.class);
         tangle.clearColumn(com.iota.iri.model.persistables.Tag.class);
+        tangle.clearColumn(com.iota.iri.model.StateDiff.class);
         tangle.clearMetadata(com.iota.iri.model.persistables.Transaction.class);
 
         //rescan all tx & refill the columns
@@ -188,6 +189,8 @@ public class Iota {
      * Exceptions during shutdown are not caught.
      */
     public void shutdown() throws Exception {
+        // shutdown in reverse starting order (to not break any dependencies)
+        transactionRequesterWorker.shutdown();
         transactionStatsPublisher.shutdown();
         tipsSolidifier.shutdown();
         node.shutdown();
@@ -195,8 +198,6 @@ public class Iota {
         replicator.shutdown();
         transactionValidator.shutdown();
         tangle.shutdown();
-        messageQ.shutdown();
-
         
         // free the resources of the snapshot provider last because all other instances need it
         snapshotProvider.shutdown();
@@ -208,7 +209,10 @@ public class Iota {
                 tangle.addPersistenceProvider(new RocksDBPersistenceProvider(
                         configuration.getDbPath(),
                         configuration.getDbLogPath(),
-                        configuration.getDbCacheSize()));
+                        configuration.getDbCacheSize(),
+                        Tangle.COLUMN_FAMILIES,
+                        Tangle.METADATA_COLUMN_FAMILY)
+                );
                 break;
             }
             default: {
@@ -216,18 +220,19 @@ public class Iota {
             }
         }
         if (configuration.isZmqEnabled()) {
-            tangle.addPersistenceProvider(new ZmqPublishProvider(messageQ));
+            tangle.addMessageQueueProvider(new ZmqMessageQueueProvider(configuration));
         }
     }
 
     private TipSelector createTipSelector(TipSelConfig config) {
-        RatingCalculator ratingCalculator = new CumulativeWeightCalculator(tangle);
-        TailFinder tailFinder = new TailFinderImpl(tangle);
-        Walker walker = new WalkerAlpha(tailFinder, tangle, messageQ, new SecureRandom(), config);
-        StartingTipSelector startingTipSelector = new ConnectedComponentsStartingTipSelector(tangle, CumulativeWeightCalculator.MAX_FUTURE_SET_SIZE, tipsViewModel);
+        RatingCalculator ratingCalculator = new CumulativeWeightCalculator(tangle, snapshotProvider);
         EntryPointSelector entryPointSelector = new EntryPointSelectorCumulativeWeightThreshold(
             tangle, CumulativeWeightCalculator.MAX_FUTURE_SET_SIZE, startingTipSelector, tailFinder);
+        TailFinder tailFinder = new TailFinderImpl(tangle);
+        Walker walker = new WalkerAlpha(tailFinder, tangle, new SecureRandom(), config);
+        StartingTipSelector startingTipSelector = new ConnectedComponentsStartingTipSelector(tangle, CumulativeWeightCalculator.MAX_FUTURE_SET_SIZE, tipsViewModel);
         ReferenceChecker referenceChecker = new ReferenceCheckerImpl(tangle);
-        return new TipSelectorImpl(tangle, ledgerValidator, entryPointSelector, ratingCalculator, walker, referenceChecker);
+        return new TipSelectorImpl(tangle, snapshotProvider, ledgerService, entryPointSelector, ratingCalculator,
+            walker, referenceChecker, config);
     }
 }
