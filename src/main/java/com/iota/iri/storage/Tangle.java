@@ -5,7 +5,6 @@ import com.iota.iri.model.StateDiff;
 import com.iota.iri.model.persistables.Address;
 import com.iota.iri.model.persistables.Approvee;
 import com.iota.iri.model.persistables.Bundle;
-import com.iota.iri.model.persistables.Milestone;
 import com.iota.iri.model.persistables.ObsoleteTag;
 import com.iota.iri.model.persistables.Tag;
 import com.iota.iri.model.persistables.Transaction;
@@ -28,7 +27,6 @@ public class Tangle {
     public static final Map<String, Class<? extends Persistable>> COLUMN_FAMILIES =
             new LinkedHashMap<String, Class<? extends Persistable>>() {{
                 put("transaction", Transaction.class);
-                put("milestone", Milestone.class);
                 put("stateDiff", StateDiff.class);
                 put("address", Address.class);
                 put("approvee", Approvee.class);

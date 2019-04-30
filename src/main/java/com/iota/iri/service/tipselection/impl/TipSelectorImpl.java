@@ -1,8 +1,10 @@
 package com.iota.iri.service.tipselection.impl;
 
+import com.iota.iri.conf.TipSelConfig;
 import com.iota.iri.model.Hash;
 import com.iota.iri.model.HashId;
 import com.iota.iri.service.ledger.LedgerService;
+import com.iota.iri.service.snapshot.SnapshotProvider;
 import com.iota.iri.service.tipselection.*;
 import com.iota.iri.storage.Tangle;
 import com.iota.iri.utils.collections.interfaces.UnIterableMap;
@@ -31,22 +33,28 @@ public class TipSelectorImpl implements TipSelector {
     private final LedgerService ledgerService;
     private final Tangle tangle;
     private final ReferenceChecker referenceChecker;
+    private final TipSelConfig config;
 
     /**
      * Constructor for Tip Selector.
      *
      * @param tangle Tangle object which acts as a database interface.
+     * @param snapshotProvider allows access to snapshots of the ledger state
      * @param ledgerService used by walk validator to check ledger consistency.
      * @param entryPointSelector instance of the entry point selector to get tip selection starting points.
      * @param ratingCalculator instance of rating calculator, to calculate weighted walks.
      * @param walkerAlpha instance of walker (alpha), to perform weighted random walks as per the IOTA white paper.
      * @param referenceChecker instance of reference checker, for getConfidences
+     * @param config configurations to set internal parameters.
      */
     public TipSelectorImpl(Tangle tangle,
+                           SnapshotProvider snapshotProvider,
+                           LedgerService ledgerService,
                            EntryPointSelector entryPointSelector,
                            RatingCalculator ratingCalculator,
                            Walker walkerAlpha,
-                           ReferenceChecker referenceChecker) {
+                           ReferenceChecker referenceChecker,
+                           TipSelConfig config) {
 
         this.entryPointSelector = entryPointSelector;
         this.ratingCalculator = ratingCalculator;
@@ -56,6 +64,7 @@ public class TipSelectorImpl implements TipSelector {
         //used by walkValidator
         this.ledgerService = ledgerService;
         this.tangle = tangle;
+        this.config = config;
         this.referenceChecker = referenceChecker;
     }
 
@@ -78,32 +87,37 @@ public class TipSelectorImpl implements TipSelector {
      */
     @Override
     public List<Hash> getTransactionsToApprove(Optional<Hash> reference) throws Exception {
+        try {
+            snapshotProvider.getLatestSnapshot().lockRead();
 
-        //preparation
-        Hash entryPoint = entryPointSelector.getEntryPoint();
-        UnIterableMap<HashId, Integer> rating = ratingCalculator.calculate(entryPoint);
+            //preparation
+            Hash entryPoint = entryPointSelector.getEntryPoint();
+            UnIterableMap<HashId, Integer> rating = ratingCalculator.calculate(entryPoint);
 
-        //random walk
-        List<Hash> tips = new LinkedList<>();
-        WalkValidator walkValidator = new WalkValidatorImpl(tangle, ledgerService);
-        Hash tip = walker.walk(entryPoint, rating, walkValidator);
-        tips.add(tip);
+            //random walk
+            List<Hash> tips = new LinkedList<>();
+            WalkValidator walkValidator = new WalkValidatorImpl(tangle, snapshotProvider, ledgerService, config);
+            Hash tip = walker.walk(entryPoint, rating, walkValidator);
+            tips.add(tip);
 
-        if (reference.isPresent()) {
-            checkReference(reference.get(), rating);
-            entryPoint = reference.get();
+            if (reference.isPresent()) {
+                checkReference(reference.get(), rating);
+                entryPoint = reference.get();
+            }
+
+            //passing the same walkValidator means that the walks will be consistent with each other
+            tip = walker.walk(entryPoint, rating, walkValidator);
+            tips.add(tip);
+
+            //validate
+            if (!ledgerService.tipsConsistent(tips)) {
+                throw new IllegalStateException(TIPS_NOT_CONSISTENT);
+            }
+
+            return tips;
+        } finally {
+            snapshotProvider.getLatestSnapshot().unlockRead();
         }
-
-        //passing the same walkValidator means that the walks will be consistent with each other
-        tip = walker.walk(entryPoint, rating, walkValidator);
-        tips.add(tip);
-
-        //validate
-        if (!ledgerService.tipsConsistent(tips)) {
-            throw new IllegalStateException(TIPS_NOT_CONSISTENT);
-        }
-
-        return tips;
     }
 
     private void checkReference(HashId reference, UnIterableMap<HashId, Integer> rating)

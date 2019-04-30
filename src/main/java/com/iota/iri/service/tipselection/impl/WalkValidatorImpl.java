@@ -4,6 +4,7 @@ import com.iota.iri.conf.TipSelConfig;
 import com.iota.iri.controllers.TransactionViewModel;
 import com.iota.iri.model.Hash;
 import com.iota.iri.service.ledger.LedgerService;
+import com.iota.iri.service.snapshot.SnapshotProvider;
 import com.iota.iri.service.tipselection.WalkValidator;
 import com.iota.iri.storage.Tangle;
 import org.slf4j.Logger;
@@ -26,7 +27,9 @@ public class WalkValidatorImpl implements WalkValidator {
 
     private final Tangle tangle;
     private final Logger log = LoggerFactory.getLogger(WalkValidator.class);
+    private final SnapshotProvider snapshotProvider;
     private final LedgerService ledgerService;
+    private final TipSelConfig config;
 
     private Map<Hash, Long> myDiff;
     private Set<Hash> myApprovedHashes;
@@ -34,11 +37,16 @@ public class WalkValidatorImpl implements WalkValidator {
     /**
      * Constructor of Walk Validator
      * @param tangle Tangle object which acts as a database interface.
+     * @param snapshotProvider grants access to snapshots od the ledger state.
      * @param ledgerService allows to perform ledger related logic.
+     * @param config configurations to set internal parameters.
      */
-    public WalkValidatorImpl(Tangle tangle, LedgerService ledgerService) {
+    public WalkValidatorImpl(Tangle tangle, SnapshotProvider snapshotProvider, LedgerService ledgerService,
+                             TipSelConfig config) {
         this.tangle = tangle;
+        this.snapshotProvider = snapshotProvider;
         this.ledgerService = ledgerService;
+        this.config = config;
 
         myDiff = new HashMap<>();
         myApprovedHashes = new HashSet<>();

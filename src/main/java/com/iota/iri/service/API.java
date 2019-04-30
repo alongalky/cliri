@@ -36,7 +36,6 @@ import io.undertow.security.impl.BasicAuthenticationMechanism;
 import io.undertow.server.HttpHandler;
 import io.undertow.server.HttpServerExchange;
 import io.undertow.util.*;
-
 import org.apache.commons.lang3.NotImplementedException;
 import org.apache.commons.lang3.StringUtils;
 import org.slf4j.Logger;
@@ -790,11 +789,11 @@ public class API {
         
         for (final TransactionViewModel transactionViewModel : elements) {
             //store transactions
-            if(transactionViewModel.store(instance.tangle)) {
+            if(transactionViewModel.store(instance.tangle, instance.snapshotProvider.getInitialSnapshot())) {
                 transactionViewModel.setArrivalTime(System.currentTimeMillis() / 1000L);
                 instance.transactionValidator.updateStatus(transactionViewModel);
                 transactionViewModel.updateSender("local");
-                transactionViewModel.update(instance.tangle, "sender");
+                transactionViewModel.update(instance.tangle, instance.snapshotProvider.getInitialSnapshot(), "sender");
             }
         }
     }
@@ -1062,8 +1061,6 @@ public class API {
         throw new NotImplementedException(NOT_SUPPORTED);
     }
 
-    private static int counter_PoW = 0;
-    
     /**
      * Can be 0 or more, and is set to 0 every 100 requests.
      * Each increase indicates another 2 tips sent.
@@ -1082,8 +1079,6 @@ public class API {
         API.counter_PoW++;
     }
 
-    private static long ellapsedTime_PoW = 0L;
-    
     /**
      * Can be 0 or more, and is set to 0 every 100 requests.
      * 

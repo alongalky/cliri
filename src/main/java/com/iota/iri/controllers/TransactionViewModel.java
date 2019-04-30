@@ -260,7 +260,7 @@ public class TransactionViewModel {
      * @param item The string identifying the purpose of the update
      * @throws Exception Thrown if any of the metadata fails to fetch, or if the database update fails
      */
-    public void update(Tangle tangle, Snapshot initialSnapshot, String item) throws Exception {
+    public void update(Tangle tangle, String item) throws Exception {
         getAddressHash();
         getTrunkTransactionHash();
         getBranchTransactionHash();
@@ -269,9 +269,6 @@ public class TransactionViewModel {
         getObsoleteTagValue();
         setAttachmentData();
         setMetadata();
-        if (initialSnapshot.hasSolidEntryPoint(hash)) {
-            return;
-        }
         tangle.update(transaction, hash, item);
     }
 
@@ -388,11 +385,7 @@ public class TransactionViewModel {
      * @return True if the {@link Transaction} is stored, False if not.
      * @throws Exception Thrown if there is an error fetching the batch or storing in the database.
      */
-    public boolean store(Tangle tangle, Snapshot initialSnapshot) throws Exception {
-        if (initialSnapshot.hasSolidEntryPoint(hash) || exists(tangle, hash)) {
-            return false;
-        }
-
+    public boolean store(Tangle tangle) throws Exception {
         List<Pair<Indexable, Persistable>> batch = getSaveBatch();
         if (exists(tangle, hash)) {
             return false;
@@ -614,10 +607,10 @@ public class TransactionViewModel {
      * @param validity The state of validity that the {@link Transaction} will be updated to
      * @throws Exception Thrown if there is an error with the update
      */
-    public void setValidity(Tangle tangle, Snapshot initialSnapshot, int validity) throws Exception {
+    public void setValidity(Tangle tangle, int validity) throws Exception {
         if (transaction.validity != validity) {
             transaction.validity = validity;
-            update(tangle, initialSnapshot, "validity");
+            update(tangle, "validity");
         }
     }
 
@@ -705,11 +698,11 @@ public class TransactionViewModel {
         while (hashIterator.hasNext()) {
             transactionViewModel = TransactionViewModel.fromHash(tangle, hashIterator.next());
 
-            transactionViewModel.updateHeights(tangle, initialSnapshot);
+            transactionViewModel.updateHeights(tangle);
 
             if (!transactionViewModel.isSolid()) {
                 transactionViewModel.updateSolid(true);
-                transactionViewModel.update(tangle, initialSnapshot, "solid|height");
+                transactionViewModel.update(tangle, "solid|height");
             }
         }
     }
@@ -735,64 +728,6 @@ public class TransactionViewModel {
         return transaction.solid;
     }
 
-    /** @return The {@link Transaction#snapshot} index */
-    public int snapshotIndex() {
-        return transaction.snapshot;
-    }
-
-    /**
-     * Sets the current {@link Transaction#snapshot} index.
-     *
-     * This is used to set a milestone transactions index.
-     *
-     * @param tangle The tangle reference for the database.
-     * @param initialSnapshot snapshot that acts as genesis
-     * @param index The new index to be attached to the {@link Transaction} object
-     * @throws Exception Thrown if the database update does not return correctly
-     */
-    public void setSnapshot(Tangle tangle, Snapshot initialSnapshot, final int index) throws Exception {
-        if (index != transaction.snapshot) {
-            transaction.snapshot = index;
-            update(tangle, initialSnapshot, "snapshot");
-        }
-    }
-
-    /**
-     * This method sets the {@link Transaction#milestone} flag.
-     *
-     * It gets automatically called by the {@link com.iota.iri.service.milestone.LatestMilestoneTracker} and marks transactions that represent a
-     * milestone accordingly. It first checks if the {@link Transaction#milestone} flag has changed and if so, it issues
-     * a database update.
-     *
-     * @param tangle Tangle instance which acts as a database interface <<<<<<< HEAD
-     * @param isMilestone True if the {@link Transaction} is a milestone and False if not
-     * @throws Exception Thrown if there is an error while saving the changes to the database =======
-     * @param initialSnapshot the snapshot representing the starting point of our ledger
-     * @param isMilestone true if the transaction is a milestone and false otherwise
-     * @throws Exception if something goes wrong while saving the changes to the database >>>>>>> release-v1.5.6
-     */
-    public void isMilestone(Tangle tangle, Snapshot initialSnapshot, final boolean isMilestone) throws Exception {
-        if (isMilestone != transaction.milestone) {
-            transaction.milestone = isMilestone;
-            update(tangle, initialSnapshot, "milestone");
-        }
-    }
-
-    /**
-     * This method gets the {@link Transaction#milestone}.
-     *
-     * The {@link Transaction#milestone} flag indicates if the {@link Transaction} is a coordinator issued milestone. It
-     * allows us to differentiate the two types of transactions (normal transactions / milestones) very fast and
-     * efficiently without issuing further database queries or even full verifications of the signature. If it is set to
-     * true one can for example use the snapshotIndex() method to retrieve the corresponding {@link MilestoneViewModel}
-     * object.
-     *
-     * @return true if the {@link Transaction} is a milestone and false otherwise
-     */
-    public boolean isMilestone() {
-        return transaction.milestone;
-    }
-
     /** @return The current {@link Transaction#height} */
     public long getHeight() {
         return transaction.height;
@@ -807,11 +742,11 @@ public class TransactionViewModel {
         transaction.height = height;
     }
 
-    public void updateHeights(Tangle tangle, Snapshot initialSnapshot) throws Exception {
+    public void updateHeights(Tangle tangle) throws Exception {
         TransactionViewModel transactionVM = this, trunk = this.getTrunkTransaction(tangle);
         Stack<Hash> transactionViewModels = new Stack<>();
         transactionViewModels.push(transactionVM.getHash());
-        while(trunk.getHeight() == 0 && trunk.getType() != PREFILLED_SLOT && !initialSnapshot.hasSolidEntryPoint(trunk.getHash())) {
+        while(trunk.getHeight() == 0 && trunk.getType() != PREFILLED_SLOT && !trunk.getHash().equals(Hash.NULL_HASH)) {
             transactionVM = trunk;
             trunk = transactionVM.getTrunkTransaction(tangle);
             transactionViewModels.push(transactionVM.getHash());
@@ -819,17 +754,17 @@ public class TransactionViewModel {
         while(transactionViewModels.size() != 0) {
             transactionVM = TransactionViewModel.fromHash(tangle, transactionViewModels.pop());
             long currentHeight = transactionVM.getHeight();
-            if(initialSnapshot.hasSolidEntryPoint(trunk.getHash()) && trunk.getHeight() == 0
-                    && !initialSnapshot.hasSolidEntryPoint(transactionVM.getHash())) {
+            if(Hash.NULL_HASH.equals(trunk.getHash()) && trunk.getHeight() == 0
+                    && !Hash.NULL_HASH.equals(transactionVM.getHash())) {
                 if(currentHeight != 1L ){
                     transactionVM.updateHeight(1L);
-                    transactionVM.update(tangle, initialSnapshot, "height");
+                    transactionVM.update(tangle, "height");
                 }
             } else if ( trunk.getType() != PREFILLED_SLOT && transactionVM.getHeight() == 0){
                 long newHeight = 1L + trunk.getHeight();
                 if(currentHeight != newHeight) {
                     transactionVM.updateHeight(newHeight);
-                    transactionVM.update(tangle, initialSnapshot, "height");
+                    transactionVM.update(tangle, "height");
                 }
             } else {
                 break;

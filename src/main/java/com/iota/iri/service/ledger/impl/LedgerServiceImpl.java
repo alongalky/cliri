@@ -7,9 +7,7 @@ import com.iota.iri.service.ledger.LedgerException;
 import com.iota.iri.service.ledger.LedgerService;
 import com.iota.iri.service.snapshot.SnapshotException;
 import com.iota.iri.service.snapshot.SnapshotProvider;
-import com.iota.iri.service.snapshot.SnapshotService;
 import com.iota.iri.service.snapshot.impl.SnapshotStateDiffImpl;
-import com.iota.iri.service.spentaddresses.SpentAddressesService;
 import com.iota.iri.storage.Tangle;
 
 import java.util.*;
@@ -30,13 +28,6 @@ public class LedgerServiceImpl implements LedgerService {
      */
     private SnapshotProvider snapshotProvider;
 
-    /**
-     * Holds a reference to the service instance containing the business logic of the snapshot package.<br />
-     */
-    private SnapshotService snapshotService;
-
-    private SpentAddressesService spentAddressesService;
-
     private BundleValidator bundleValidator;
 
     /**
@@ -56,14 +47,10 @@ public class LedgerServiceImpl implements LedgerService {
      * @param snapshotService service instance of the snapshot package that gives us access to packages' business logic
      * @return the initialized instance itself to allow chaining
      */
-    public LedgerServiceImpl init(Tangle tangle, SnapshotProvider snapshotProvider, SnapshotService snapshotService,
-            SpentAddressesService spentAddressesService,
-                                  BundleValidator bundleValidator) {
+    public LedgerServiceImpl init(Tangle tangle, SnapshotProvider snapshotProvider, BundleValidator bundleValidator) {
 
         this.tangle = tangle;
         this.snapshotProvider = snapshotProvider;
-        this.snapshotService = snapshotService;
-        this.spentAddressesService = spentAddressesService;
         this.bundleValidator = bundleValidator;
 
         return this;

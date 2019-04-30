@@ -8,6 +8,7 @@ import com.iota.iri.crypto.SpongeFactory;
 import com.iota.iri.model.Hash;
 import com.iota.iri.model.HashFactory;
 import com.iota.iri.model.TransactionHash;
+import com.iota.iri.service.snapshot.SnapshotProvider;
 import com.iota.iri.storage.Tangle;
 import net.openhft.hashing.LongHashFunction;
 import org.apache.commons.lang3.StringUtils;
@@ -93,7 +94,7 @@ public class Node {
      * @param configuration Contains all the config. 
      * 
      */
-    public Node(final Tangle tangle, final TransactionValidator transactionValidator, final TransactionRequester transactionRequester, final TipsViewModel tipsViewModel, final MessageQ messageQ, final NodeConfig configuration
+    public Node(final Tangle tangle, final SnapshotProvider snapshotProvider, final TransactionValidator transactionValidator, final TransactionRequester transactionRequester, final TipsViewModel tipsViewModel, final NodeConfig configuration
     ) {
         this.configuration = configuration;
         this.tangle = tangle;

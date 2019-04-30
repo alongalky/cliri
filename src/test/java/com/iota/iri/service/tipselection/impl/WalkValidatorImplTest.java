@@ -1,6 +1,5 @@
 package com.iota.iri.service.tipselection.impl;
 
-import com.iota.iri.LedgerValidator;
 import com.iota.iri.TransactionTestUtils;
 import com.iota.iri.controllers.TransactionViewModel;
 import com.iota.iri.model.Hash;

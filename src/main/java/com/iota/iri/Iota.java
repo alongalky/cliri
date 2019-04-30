@@ -12,6 +12,7 @@ import com.iota.iri.network.replicator.Replicator;
 import com.iota.iri.service.DatabaseRecycler;
 import com.iota.iri.service.TipsSolidifier;
 import com.iota.iri.service.ledger.impl.LedgerServiceImpl;
+import com.iota.iri.service.snapshot.SnapshotException;
 import com.iota.iri.service.snapshot.impl.LocalSnapshotManagerImpl;
 import com.iota.iri.service.snapshot.impl.SnapshotProviderImpl;
 import com.iota.iri.service.stats.TransactionStatsPublisher;
@@ -22,6 +23,7 @@ import com.iota.iri.storage.rocksDB.RocksDBPersistenceProvider;
 import com.iota.iri.utils.Pair;
 
 import java.security.SecureRandom;
+import java.util.Date;
 import java.util.List;
 
 import com.iota.iri.zmq.ZmqMessageQueueProvider;
@@ -62,9 +64,6 @@ import org.slf4j.LoggerFactory;
  */
 public class Iota {
     private static final Logger log = LoggerFactory.getLogger(Iota.class);
-
-    public final LedgerValidator ledgerValidator;
-
 
     public final SnapshotProviderImpl snapshotProvider;
 
@@ -113,7 +112,7 @@ public class Iota {
         udpReceiver = new UDPReceiver(node, configuration);
         tipsSolidifier = new TipsSolidifier(tangle, transactionValidator, tipsViewModel, configuration);
         tipsSelector = createTipSelector(configuration);
-        transactionStatsPublisher = new TransactionStatsPublisher(tangle, tipsViewModel, tipsSelector, messageQ);
+        transactionStatsPublisher = new TransactionStatsPublisher(tangle, tipsViewModel, tipsSelector);
         databaseRecycler = new DatabaseRecycler(transactionValidator, transactionRequester, tipsViewModel, tangle);
 
         injectDependencies();
@@ -136,7 +135,6 @@ public class Iota {
         }
 
         if (configuration.isRevalidate()) {
-            tangle.clearColumn(com.iota.iri.model.persistables.Milestone.class);
             tangle.clearColumn(com.iota.iri.model.StateDiff.class);
             tangle.clearMetadata(com.iota.iri.model.persistables.Transaction.class);
         }
@@ -225,14 +223,13 @@ public class Iota {
     }
 
     private TipSelector createTipSelector(TipSelConfig config) {
-        RatingCalculator ratingCalculator = new CumulativeWeightCalculator(tangle, snapshotProvider);
-        EntryPointSelector entryPointSelector = new EntryPointSelectorCumulativeWeightThreshold(
-            tangle, CumulativeWeightCalculator.MAX_FUTURE_SET_SIZE, startingTipSelector, tailFinder);
+        RatingCalculator ratingCalculator = new CumulativeWeightCalculator(tangle);
         TailFinder tailFinder = new TailFinderImpl(tangle);
         Walker walker = new WalkerAlpha(tailFinder, tangle, new SecureRandom(), config);
         StartingTipSelector startingTipSelector = new ConnectedComponentsStartingTipSelector(tangle, CumulativeWeightCalculator.MAX_FUTURE_SET_SIZE, tipsViewModel);
+        EntryPointSelector entryPointSelector = new EntryPointSelectorCumulativeWeightThreshold(
+            tangle, CumulativeWeightCalculator.MAX_FUTURE_SET_SIZE, startingTipSelector, tailFinder);
         ReferenceChecker referenceChecker = new ReferenceCheckerImpl(tangle);
         return new TipSelectorImpl(tangle, snapshotProvider, ledgerService, entryPointSelector, ratingCalculator,
             walker, referenceChecker, config);
-    }
 }
