@@ -6,7 +6,7 @@ import org.apache.maven.model.io.xpp3.MavenXpp3Reader;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-import com.iota.iri.IRI;
+import com.iota.iri.CLIRI;
 import com.iota.iri.model.Hash;
 
 import java.io.FileReader;
@@ -32,7 +32,7 @@ public class IotaUtils {
      * @return the implementation version of IRI
      */
     public static String getIriVersion() {
-        String implementationVersion = IRI.class.getPackage().getImplementationVersion();
+        String implementationVersion = CLIRI.class.getPackage().getImplementationVersion();
         //If not in manifest (can happen when running from IDE)
         if (implementationVersion == null) {
             MavenXpp3Reader reader = new MavenXpp3Reader();

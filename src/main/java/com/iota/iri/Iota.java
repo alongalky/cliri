@@ -13,7 +13,6 @@ import com.iota.iri.service.DatabaseRecycler;
 import com.iota.iri.service.TipsSolidifier;
 import com.iota.iri.service.ledger.impl.LedgerServiceImpl;
 import com.iota.iri.service.snapshot.SnapshotException;
-import com.iota.iri.service.snapshot.impl.LocalSnapshotManagerImpl;
 import com.iota.iri.service.snapshot.impl.SnapshotProviderImpl;
 import com.iota.iri.service.stats.TransactionStatsPublisher;
 import com.iota.iri.service.tipselection.*;
@@ -105,9 +104,8 @@ public class Iota {
         tangle = new Tangle();
         tipsViewModel = new TipsViewModel(tangle);
         transactionRequester = new TransactionRequester(tangle, snapshotProvider);
-        transactionValidator = new TransactionValidator(tangle, snapshotProvider, tipsViewModel, transactionRequester);
-        node = new Node(tangle, snapshotProvider, transactionValidator, transactionRequester, tipsViewModel,
-                configuration);
+        transactionValidator = new TransactionValidator(tangle, tipsViewModel, transactionRequester);
+        node = new Node(tangle, transactionValidator, transactionRequester, tipsViewModel, configuration);
         replicator = new Replicator(node, configuration);
         udpReceiver = new UDPReceiver(node, configuration);
         tipsSolidifier = new TipsSolidifier(tangle, transactionValidator, tipsViewModel, configuration);
@@ -232,4 +230,5 @@ public class Iota {
         ReferenceChecker referenceChecker = new ReferenceCheckerImpl(tangle);
         return new TipSelectorImpl(tangle, snapshotProvider, ledgerService, entryPointSelector, ratingCalculator,
             walker, referenceChecker, config);
+    }
 }

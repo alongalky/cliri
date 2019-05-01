@@ -1,6 +1,5 @@
 package com.iota.iri.service.ledger;
 
-import com.iota.iri.controllers.MilestoneViewModel;
 import com.iota.iri.model.Hash;
 
 import java.util.List;

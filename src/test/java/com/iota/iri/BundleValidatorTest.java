@@ -1,7 +1,10 @@
 package com.iota.iri;
 
+import com.iota.iri.conf.MainnetConfig;
 import com.iota.iri.crypto.SpongeFactory;
 import com.iota.iri.model.TransactionHash;
+import com.iota.iri.service.snapshot.SnapshotProvider;
+import com.iota.iri.service.snapshot.impl.SnapshotProviderImpl;
 import com.iota.iri.storage.Tangle;
 import com.iota.iri.storage.rocksDB.RocksDBPersistenceProvider;
 import com.iota.iri.utils.Converter;
@@ -17,6 +20,7 @@ import java.util.stream.Collectors;
 
 public class BundleValidatorTest {
     private static Tangle tangle = new Tangle();
+    private static SnapshotProvider snapshotProvider;
 
     @BeforeClass
     public static void setUp() throws Exception {
@@ -24,13 +28,18 @@ public class BundleValidatorTest {
         TemporaryFolder logFolder = new TemporaryFolder();
         dbFolder.create();
         logFolder.create();
-        tangle.addPersistenceProvider(new RocksDBPersistenceProvider(dbFolder.getRoot().getAbsolutePath(), logFolder.getRoot().getAbsolutePath(),1000));
+        tangle.addPersistenceProvider(
+                new RocksDBPersistenceProvider(dbFolder.getRoot().getAbsolutePath(),
+                        logFolder.getRoot().getAbsolutePath(), 1000, Tangle.COLUMN_FAMILIES,
+                        Tangle.METADATA_COLUMN_FAMILY));
         tangle.init();
+        snapshotProvider = new SnapshotProviderImpl().init(new MainnetConfig());
     }
 
     @AfterClass
     public static void tearDown() throws Exception {
         tangle.shutdown();
+        snapshotProvider.shutdown();
     }
 
     @Test

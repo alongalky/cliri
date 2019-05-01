@@ -94,7 +94,7 @@ public class Node {
      * @param configuration Contains all the config. 
      * 
      */
-    public Node(final Tangle tangle, final SnapshotProvider snapshotProvider, final TransactionValidator transactionValidator, final TransactionRequester transactionRequester, final TipsViewModel tipsViewModel, final NodeConfig configuration
+    public Node(final Tangle tangle, final TransactionValidator transactionValidator, final TransactionRequester transactionRequester, final TipsViewModel tipsViewModel, final NodeConfig configuration
     ) {
         this.configuration = configuration;
         this.tangle = tangle;
@@ -506,7 +506,7 @@ public class Node {
             try {
                 sendPacket(sendingPacket, transactionViewModel, neighbor);
 
-                ByteBuffer digest = getBytesDigest(transactionViewModel.getBytes());
+                long digest = getBytesDigest(transactionViewModel.getBytes());
                 synchronized (recentSeenBytes) {
                     recentSeenBytes.put(digest, transactionViewModel.getHash());
                 }
@@ -582,7 +582,7 @@ public class Node {
      */
     public void sendPacket(TransactionViewModel transactionViewModel, Neighbor neighbor) throws Exception {
         sendPacket(sendingPacket, transactionViewModel, neighbor);
-    
+    }
 
     /**
      * This thread picks up a new transaction from the broadcast queue and 

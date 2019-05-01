@@ -8,7 +8,6 @@ import com.iota.iri.crypto.SpongeFactory;
 import com.iota.iri.model.Hash;
 import com.iota.iri.model.TransactionHash;
 import com.iota.iri.network.TransactionRequester;
-import com.iota.iri.service.snapshot.SnapshotProvider;
 import com.iota.iri.storage.Tangle;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -24,10 +23,11 @@ public class TransactionValidator {
     public static final int SOLID_SLEEP_TIME = 500;
 
     private final Tangle tangle;
-    private final SnapshotProvider snapshotProvider;
     private final TipsViewModel tipsViewModel;
     private final TransactionRequester transactionRequester;
     private int minWeightMagnitude = 81;
+    private static long snapshotTimestamp;
+    private static long snapshotTimestampMs;
     private static final long MAX_TIMESTAMP_FUTURE = 2L * 60L * 60L;
     private static final long MAX_TIMESTAMP_FUTURE_MS = MAX_TIMESTAMP_FUTURE * 1_000L;
 
@@ -55,15 +55,19 @@ public class TransactionValidator {
      * Constructor for Tangle Validator
      *
      * @param tangle relays tangle data to and from the persistence layer
-     * @param snapshotProvider data provider for the snapshots that are relevant for the node
      * @param tipsViewModel container that gets updated with the latest tips (transactions with no children)
      * @param transactionRequester used to request missing transactions from neighbors
      */
-    TransactionValidator(Tangle tangle, SnapshotProvider snapshotProvider, TipsViewModel tipsViewModel, TransactionRequester transactionRequester) {
+    TransactionValidator(Tangle tangle, TipsViewModel tipsViewModel, TransactionRequester transactionRequester) {
         this.tangle = tangle;
-        this.snapshotProvider = snapshotProvider;
         this.tipsViewModel = tipsViewModel;
         this.transactionRequester = transactionRequester;
+        TransactionValidator.setLatestEpochTimestamp(0);
+    }
+
+    static public void setLatestEpochTimestamp(long snapshotTimestamp) {
+        TransactionValidator.snapshotTimestamp = snapshotTimestamp;
+        TransactionValidator.snapshotTimestampMs = snapshotTimestamp * 1000;
     }
 
     /**
@@ -136,12 +140,11 @@ public class TransactionValidator {
     private boolean hasInvalidTimestamp(TransactionViewModel transactionViewModel) {
         if (transactionViewModel.getAttachmentTimestamp() == 0) {
             return transactionViewModel.getTimestamp() < TransactionValidator.snapshotTimestamp
-            return transactionViewModel.getTimestamp() < snapshotProvider.getInitialSnapshot().getTimestamp()
                     //you are valid if you are the genesis
                     && !Objects.equals(transactionViewModel.getHash(), Hash.NULL_HASH)
                     || transactionViewModel.getTimestamp() > (System.currentTimeMillis() / 1000) + MAX_TIMESTAMP_FUTURE;
         }
-        return transactionViewModel.getAttachmentTimestamp() < (snapshotProvider.getInitialSnapshot().getTimestamp() * 1000L)
+        return transactionViewModel.getAttachmentTimestamp() < TransactionValidator.snapshotTimestampMs
                 || transactionViewModel.getAttachmentTimestamp() > System.currentTimeMillis() + MAX_TIMESTAMP_FUTURE_MS;
     }
 
@@ -340,7 +343,7 @@ public class TransactionValidator {
                 for(Hash h: approvers) {
                     TransactionViewModel tx = fromHash(tangle, h);
                     if(quietQuickSetSolid(tx)) {
-                        tx.update(tangle, snapshotProvider.getInitialSnapshot(), "solid|height");
+                        tx.update(tangle, "solid|height");
                         tipsViewModel.setSolid(h);
                         addSolidTransaction(h);
                     }
@@ -385,7 +388,7 @@ public class TransactionValidator {
         tipsViewModel.removeTipHash(transactionViewModel.getBranchTransactionHash());
 
         if(quickSetSolid(transactionViewModel)) {
-            transactionViewModel.update(tangle, snapshotProvider.getInitialSnapshot(), "solid|height");
+            transactionViewModel.update(tangle, "solid|height");
             tipsViewModel.setSolid(transactionViewModel.getHash());
             addSolidTransaction(transactionViewModel.getHash());
         }
@@ -423,7 +426,7 @@ public class TransactionValidator {
             }
             if(solid) {
                 transactionViewModel.updateSolid(true);
-                transactionViewModel.updateHeights(tangle, snapshotProvider.getInitialSnapshot());
+                transactionViewModel.updateHeights(tangle);
                 return true;
             }
         }
@@ -437,7 +440,7 @@ public class TransactionValidator {
      * @throws Exception if we encounter an error while requesting a transaction
      */
     private boolean checkApproovee(TransactionViewModel approovee) throws Exception {
-        if(snapshotProvider.getInitialSnapshot().hasSolidEntryPoint(approovee.getHash())) {
+        if(approovee.getHash().equals(Hash.NULL_HASH)) {
             return true;
         }
         if(approovee.getType() == PREFILLED_SLOT) {

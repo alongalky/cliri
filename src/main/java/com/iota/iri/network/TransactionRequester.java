@@ -68,19 +68,14 @@ public class TransactionRequester {
         }
     }
 
-    public void requestTransaction(Hash hash, boolean milestone) throws Exception {
-        if (!snapshotProvider.getInitialSnapshot().hasSolidEntryPoint(hash) && !TransactionViewModel.exists(tangle, hash)) {
+    public void requestTransaction(Hash hash) throws Exception {
+        if (!hash.equals(Hash.NULL_HASH) && !TransactionViewModel.exists(tangle, hash)) {
             synchronized (syncObj) {
-                if(milestone) {
-                    transactionsToRequest.remove(hash);
-                    milestoneTransactionsToRequest.add(hash);
-                } else {
-                    if(!milestoneTransactionsToRequest.contains(hash)) {
-                        if (transactionsToRequestIsFull()) {
-                            popEldestTransactionToRequest();
-                        }
-                        transactionsToRequest.add(hash);
+                if(!milestoneTransactionsToRequest.contains(hash)) {
+                    if (transactionsToRequestIsFull()) {
+                        popEldestTransactionToRequest();
                     }
+                    transactionsToRequest.add(hash);
                 }
             }
         }
@@ -107,13 +102,10 @@ public class TransactionRequester {
      * while i.e. solidifying transactions or if a transaction arrived due to the gossip protocol.
      *
      * @param transactionHash hash of the transaction to check
-     * @param milestoneRequest flag that indicates if the hash was requested by a milestone request
      * @return true if the transaction is in the set of transactions to be requested and false otherwise
      */
-    public boolean isTransactionRequested(Hash transactionHash, boolean milestoneRequest) {
-        return (milestoneRequest && milestoneTransactionsToRequest.contains(transactionHash))
-                || (!milestoneRequest && milestoneTransactionsToRequest.contains(transactionHash) ||
-                transactionsToRequest.contains(transactionHash));
+    public boolean isTransactionRequested(Hash transactionHash) {
+        return transactionsToRequest.contains(transactionHash);
     }
 
     private boolean transactionsToRequestIsFull() {
@@ -121,19 +113,14 @@ public class TransactionRequester {
     }
 
 
-    public Hash transactionToRequest(boolean milestone) throws Exception {
-        // determine which set of transactions to operate on
-        Set<Hash> primarySet = milestone ? milestoneTransactionsToRequest : transactionsToRequest;
-        Set<Hash> alternativeSet = milestone ? transactionsToRequest : milestoneTransactionsToRequest;
-        Set<Hash> requestSet = primarySet.size() == 0 ? alternativeSet : primarySet;
-
+    public Hash transactionToRequest() throws Exception {
         // determine the first hash in our set that needs to be processed
         Hash hash = null;
         synchronized (syncObj) {
             // repeat while we have transactions that shall be requested
-            while (requestSet.size() != 0) {
+            while (transactionsToRequest.size() != 0) {
                 // get the first item in our set for further examination
-                Iterator<Hash> iterator = requestSet.iterator();
+                Iterator<Hash> iterator = transactionsToRequest.iterator();
                 hash = iterator.next();
 
                 // if we have received the transaction in the mean time ....
@@ -153,8 +140,8 @@ public class TransactionRequester {
             }
         }
 
-        // randomly drop "non-milestone" transactions so we don't keep on asking for non-existent transactions forever
-        if(random.nextDouble() < P_REMOVE_REQUEST && !requestSet.equals(milestoneTransactionsToRequest)) {
+        // randomly drop transactions so we don't keep on asking for non-existent transactions forever
+        if(random.nextDouble() < P_REMOVE_REQUEST) {
             synchronized (syncObj) {
                 transactionsToRequest.remove(hash);
             }
@@ -162,6 +149,10 @@ public class TransactionRequester {
 
         // return our result
         return hash;
+    }
+
+    public void clearQueue() {
+        transactionsToRequest.clear();
     }
 
 }

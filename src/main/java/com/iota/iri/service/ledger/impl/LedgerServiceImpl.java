@@ -1,10 +1,12 @@
 package com.iota.iri.service.ledger.impl;
+
 import com.iota.iri.BundleValidator;
 import com.iota.iri.controllers.StateDiffViewModel;
 import com.iota.iri.controllers.TransactionViewModel;
 import com.iota.iri.model.Hash;
 import com.iota.iri.service.ledger.LedgerException;
 import com.iota.iri.service.ledger.LedgerService;
+import com.iota.iri.service.snapshot.Snapshot;
 import com.iota.iri.service.snapshot.SnapshotException;
 import com.iota.iri.service.snapshot.SnapshotProvider;
 import com.iota.iri.service.snapshot.impl.SnapshotStateDiffImpl;
@@ -115,142 +117,6 @@ public class LedgerServiceImpl implements LedgerService {
     @Override
     public Map<Hash, Long> generateBalanceDiff(Set<Hash> visitedTransactions, Hash startTransaction, int milestoneIndex)
             throws LedgerException {
-
-        Map<Hash, Long> state = new HashMap<>();
-        Set<Hash> countedTx = new HashSet<>();
-
-        Snapshot initialSnapshot = snapshotProvider.getInitialSnapshot();
-        Map<Hash, Integer> solidEntryPoints = initialSnapshot.getSolidEntryPoints();
-        solidEntryPoints.keySet().forEach(solidEntryPointHash -> {
-            visitedTransactions.add(solidEntryPointHash);
-            countedTx.add(solidEntryPointHash);
-        });
-
-        final Queue<Hash> nonAnalyzedTransactions = new LinkedList<>(Collections.singleton(startTransaction));
-        Hash transactionPointer;
-        while ((transactionPointer = nonAnalyzedTransactions.poll()) != null) {
-            if (visitedTransactions.add(transactionPointer)) {
-                try {
-                    final TransactionViewModel transactionViewModel = TransactionViewModel.fromHash(tangle,
-                            transactionPointer);
-                    // only take transactions into account that have not been confirmed by the referenced milestone, yet
-                    if (!milestoneService.isTransactionConfirmed(transactionViewModel, milestoneIndex)) {
-                        if (transactionViewModel.getType() == TransactionViewModel.PREFILLED_SLOT) {
-                            return null;
-                        } else {
-                            if (transactionViewModel.getCurrentIndex() == 0) {
-                                boolean validBundle = false;
-
-                                final List<List<TransactionViewModel>> bundleTransactions = bundleValidator.validate(
-                                        tangle, snapshotProvider.getInitialSnapshot(), transactionViewModel.getHash());
-
-                                for (final List<TransactionViewModel> bundleTransactionViewModels : bundleTransactions) {
-
-                                    //ISSUE 1008: generateBalanceDiff should be refactored so we don't have those hidden
-                                    // concerns
-                                    spentAddressesService
-                                            .persistValidatedSpentAddressesAsync(bundleTransactionViewModels);
-
-                                    if (BundleValidator.isInconsistent(bundleTransactionViewModels)) {
-                                        break;
-                                    }
-
-                                    if (bundleTransactionViewModels.get(0).getHash().equals(transactionViewModel.getHash())) {
-                                        validBundle = true;
-
-                                        for (final TransactionViewModel bundleTransactionViewModel : bundleTransactionViewModels) {
-
-                                            if (bundleTransactionViewModel.value() != 0 && countedTx.add(bundleTransactionViewModel.getHash())) {
-
-                                                final Hash address = bundleTransactionViewModel.getAddressHash();
-                                                final Long value = state.get(address);
-                                                state.put(address, value == null ? bundleTransactionViewModel.value()
-                                                        : Math.addExact(value, bundleTransactionViewModel.value()));
-                                            }
-                                        }
-
-                                        break;
-                                    }
-                                }
-                                if (!validBundle) {
-                                    return null;
-                                }
-                            }
-
-                            nonAnalyzedTransactions.offer(transactionViewModel.getTrunkTransactionHash());
-                            nonAnalyzedTransactions.offer(transactionViewModel.getBranchTransactionHash());
-                        }
-                    }
-                } catch (Exception e) {
-                    throw new LedgerException("unexpected error while generating the balance diff", e);
-                }
-            }
-        }
-
-        return state;
-    }
-
-
-    /**
-     * Generates the {@link com.iota.iri.model.StateDiff} that belongs to the given milestone in the database and marks
-     * all transactions that have been approved by the milestone accordingly by setting their {@code snapshotIndex}
-     * value.<br />
-     * <br />
-     * It first checks if the {@code snapshotIndex} of the transaction belonging to the milestone was correctly set
-     * already (to determine if this milestone was processed already) and proceeds to generate the {@link
-     * com.iota.iri.model.StateDiff} if that is not the case. To do so, it calculates the balance changes, checks if
-     * they are consistent and only then writes them to the database.<br />
-     * <br />
-     * If inconsistencies in the {@code snapshotIndex} are found it issues a reset of the corresponding milestone to
-     * recover from this problem.<br />
-     *
-     * @param milestone the milestone that shall have its {@link com.iota.iri.model.StateDiff} generated
-     * @return {@code true} if the {@link com.iota.iri.model.StateDiff} could be generated and {@code false} otherwise
-     * @throws LedgerException if anything unexpected happens while generating the {@link com.iota.iri.model.StateDiff}
-     */
-    private boolean generateStateDiff(MilestoneViewModel milestone) throws LedgerException {
-        try {
-            TransactionViewModel transactionViewModel = TransactionViewModel.fromHash(tangle, milestone.getHash());
-
-            if (!transactionViewModel.isSolid()) {
-                return false;
-            }
-
-            final int transactionSnapshotIndex = transactionViewModel.snapshotIndex();
-            boolean successfullyProcessed = transactionSnapshotIndex == milestone.index();
-            if (!successfullyProcessed) {
-                // if the snapshotIndex of our transaction was set already, we have processed our milestones in
-                // the wrong order (i.e. while rescanning the db)
-                if (transactionSnapshotIndex != 0) {
-                    milestoneService.resetCorruptedMilestone(milestone.index());
-                }
-
-                snapshotProvider.getLatestSnapshot().lockRead();
-                try {
-                    Hash tail = transactionViewModel.getHash();
-                    Map<Hash, Long> balanceChanges = generateBalanceDiff(new HashSet<>(), tail,
-                            snapshotProvider.getLatestSnapshot().getIndex());
-                    successfullyProcessed = balanceChanges != null;
-                    if (successfullyProcessed) {
-                        successfullyProcessed = snapshotProvider.getLatestSnapshot().patchedState(
-                                new SnapshotStateDiffImpl(balanceChanges)).isConsistent();
-                        if (successfullyProcessed) {
-                            milestoneService.updateMilestoneIndexOfMilestoneTransactions(milestone.getHash(),
-                                    milestone.index());
-
-                            if (!balanceChanges.isEmpty()) {
-                                new StateDiffViewModel(balanceChanges, milestone.getHash()).store(tangle);
-                            }
-                        }
-                    }
-                } finally {
-                    snapshotProvider.getLatestSnapshot().unlockRead();
-                }
-            }
-
-            return successfullyProcessed;
-        } catch (Exception e) {
-            throw new LedgerException("unexpected error while generating the StateDiff for " + milestone, e);
-        }
+        throw new LedgerException("CLIRI ledger logic not implemented yet.");
     }
 }

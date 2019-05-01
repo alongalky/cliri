@@ -386,7 +386,7 @@ public class TransactionViewModel {
      * @throws Exception Thrown if there is an error fetching the batch or storing in the database.
      */
     public boolean store(Tangle tangle) throws Exception {
-        List<Pair<Indexable, Persistable>> batch = getSaveBatch();
+    List<Pair<Indexable, Persistable>> batch = getSaveBatch();
         if (exists(tangle, hash)) {
             return false;
         }
@@ -691,7 +691,7 @@ public class TransactionViewModel {
                 : TransactionViewModel.FILLED_SLOT;
     }
 
-    public static void updateSolidTransactions(Tangle tangle, Snapshot initialSnapshot, final Set<Hash> analyzedHashes)
+    public static void updateSolidTransactions(Tangle tangle, final Set<Hash> analyzedHashes)
             throws Exception {
         Iterator<Hash> hashIterator = analyzedHashes.iterator();
         TransactionViewModel transactionViewModel;

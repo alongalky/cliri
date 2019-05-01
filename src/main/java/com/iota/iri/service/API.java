@@ -789,11 +789,11 @@ public class API {
         
         for (final TransactionViewModel transactionViewModel : elements) {
             //store transactions
-            if(transactionViewModel.store(instance.tangle, instance.snapshotProvider.getInitialSnapshot())) {
+            if(transactionViewModel.store(instance.tangle)) {
                 transactionViewModel.setArrivalTime(System.currentTimeMillis() / 1000L);
                 instance.transactionValidator.updateStatus(transactionViewModel);
                 transactionViewModel.updateSender("local");
-                transactionViewModel.update(instance.tangle, instance.snapshotProvider.getInitialSnapshot(), "sender");
+                transactionViewModel.update(instance.tangle, "sender");
             }
         }
     }
@@ -815,7 +815,9 @@ public class API {
       **/
     private AbstractResponse getNodeInfoStatement(){
         String name = instance.configuration.isTestnet() ? CLIRI.TESTNET_NAME : CLIRI.MAINNET_NAME;
-        return GetNodeInfoResponse.create(name, CLIRI.VERSION,
+        return GetNodeInfoResponse.create(
+                name,
+                IotaUtils.getIriVersion(),
                 Runtime.getRuntime().availableProcessors(),
                 Runtime.getRuntime().freeMemory(), 
                 System.getProperty("java.version"), 

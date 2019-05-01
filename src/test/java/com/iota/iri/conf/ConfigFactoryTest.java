@@ -1,5 +1,8 @@
 package com.iota.iri.conf;
 
+import com.iota.iri.model.Hash;
+import com.iota.iri.model.HashFactory;
+
 import org.junit.Rule;
 import org.junit.Test;
 import org.junit.rules.TemporaryFolder;
@@ -11,6 +14,7 @@ import java.io.IOException;
 import java.util.Properties;
 
 import static junit.framework.TestCase.assertTrue;
+import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertFalse;
 
 /**
@@ -105,6 +109,30 @@ public class ConfigFactoryTest {
     }
 
     /**
+     * Test if leading and trailing spaces are trimmed from string in properties file.
+     * @throws IOException when config file not found.
+     */
+    @Test
+    public void createFromFileTestnetWithTrailingSpaces() throws IOException {
+        File configFile = createTestnetConfigFile("true");
+        IotaConfig iotaConfig = ConfigFactory.createFromFile(configFile, true);
+        Hash expected = HashFactory.ADDRESS.create(
+                "NPCRMHDOMU9QHFFBKFCWFHFJNNQDRNDOGVPEVDVGWKHFUFEXLWJBHXDJFKQGYFRDZBQIFDSJMUCCQVICI");
+        assertEquals("Expected that leading and trailing spaces were trimmed.", expected, iotaConfig.getCoordinator());
+    }
+
+    /**
+     * Test if trailing spaces are correctly trimmed from integer.
+     * @throws IOException when config file not found.
+     */
+    @Test
+    public void createFromFileTestnetWithInteger() throws IOException {
+        File configFile = createTestnetConfigFile("true");
+        IotaConfig iotaConfig = ConfigFactory.createFromFile(configFile, true);
+        assertEquals("Expected that trailing spaces are trimmed.", 2, iotaConfig.getMilestoneStartIndex());
+    }
+
+    /**
      * Test if trailing spaces are correctly trimmed from boolean.
      * @throws IOException when config file not found.
      */
@@ -130,8 +158,11 @@ public class ConfigFactoryTest {
         properties.setProperty("TESTNET", testnet);
         properties.setProperty("ZMQ_ENABLED", " TRUE ");
         properties.setProperty("MWM", "9");
+        properties.setProperty("SNAPSHOT_FILE", "conf/snapshot.txt");
+        properties.setProperty("COORDINATOR", "  NPCRMHDOMU9QHFFBKFCWFHFJNNQDRNDOGVPEVDVGWKHFUFEXLWJBHXDJFKQGYFRDZBQIFDSJMUCCQVICI ");
         properties.setProperty("MILESTONE_START_INDEX", "2 ");
         properties.setProperty("KEYS_IN_MILESTONE", "10");
+        properties.setProperty("MAX_DEPTH", "1000");
 
         File configFile = folder.newFile("myCustomIotaConfig.ini");
         FileOutputStream fileOutputStream = new FileOutputStream(configFile);

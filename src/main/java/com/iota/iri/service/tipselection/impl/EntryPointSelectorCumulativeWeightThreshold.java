@@ -34,11 +34,6 @@ public class EntryPointSelectorCumulativeWeightThreshold implements EntryPointSe
     }
 
     @Override
-    public Hash getEntryPoint(int depth) {
-        throw new NotImplementedException("Not supported");
-    }
-
-    @Override
     public Hash getEntryPoint() throws Exception {
         Hash entryBundle = backtrack(startingTipSelector.getTip(), threshold);
         Hash entryPoint = tailFinder.findTail(entryBundle).get();

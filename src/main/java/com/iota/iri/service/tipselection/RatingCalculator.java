@@ -7,7 +7,6 @@ import com.iota.iri.utils.collections.interfaces.UnIterableMap;
 /**
  * Calculates the rating for a sub graph
  */
-@FunctionalInterface
 public interface RatingCalculator {
 
     /**

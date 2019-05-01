@@ -172,7 +172,7 @@ public class SnapshotProviderImpl implements SnapshotProvider {
      *
      * @throws SnapshotException if anything goes wrong while loading the snapshots
      */
-    private void loadSnapshots() throws SnapshotException, SpentAddressesException {
+    private void loadSnapshots() throws SnapshotException {
         initialSnapshot = loadLocalSnapshot();
         if (initialSnapshot == null) {
             initialSnapshot = loadBuiltInSnapshot();
@@ -190,49 +190,8 @@ public class SnapshotProviderImpl implements SnapshotProvider {
      * @return local snapshot of the node
      * @throws SnapshotException if local snapshot files exist but are malformed
      */
-    private Snapshot loadLocalSnapshot() throws SnapshotException, SpentAddressesException {
-        if (config.getLocalSnapshotsEnabled()) {
-            File localSnapshotFile = new File(config.getLocalSnapshotsBasePath() + ".snapshot.state");
-            File localSnapshotMetadDataFile = new File(config.getLocalSnapshotsBasePath() + ".snapshot.meta");
-
-            if (localSnapshotFile.exists() && localSnapshotFile.isFile() && localSnapshotMetadDataFile.exists() &&
-                    localSnapshotMetadDataFile.isFile()) {
-
-                assertSpentAddressesDbExist();
-
-                SnapshotState snapshotState = readSnapshotStatefromFile(localSnapshotFile.getAbsolutePath());
-                if (!snapshotState.hasCorrectSupply()) {
-                    throw new SnapshotException("the snapshot state file has an invalid supply");
-                }
-                if (!snapshotState.isConsistent()) {
-                    throw new SnapshotException("the snapshot state file is not consistent");
-                }
-
-                SnapshotMetaData snapshotMetaData = readSnapshotMetaDatafromFile(localSnapshotMetadDataFile);
-
-                log.info("resumed from local snapshot #" + snapshotMetaData.getIndex() + " ...");
-
-                return new SnapshotImpl(snapshotState, snapshotMetaData);
-            }
-        }
-
-        return null;
-    }
-
-    private void assertSpentAddressesDbExist() throws SpentAddressesException {
-        String spentAddressesDbPath = config.getSpentAddressesDbPath();
-        try {
-            File spentAddressFolder = new File(spentAddressesDbPath);
-            //If there is at least one file in the db the check should pass
-            if (Files.newDirectoryStream(spentAddressFolder.toPath(), "*.sst").iterator().hasNext()) {
-                return;
-            }
-        }
-        catch (IOException e){
-            throw new SpentAddressesException("Can't load " + spentAddressesDbPath + " folder", e);
-        }
-
-        throw new SpentAddressesException(spentAddressesDbPath + " folder has no sst files");
+    private Snapshot loadLocalSnapshot() throws SnapshotException {
+        throw new SnapshotException("CLIRI: Snapshots are not yet implemented");
     }
 
     /**
@@ -248,50 +207,7 @@ public class SnapshotProviderImpl implements SnapshotProvider {
      * @throws SnapshotException if anything goes wrong while loading the builtin {@link Snapshot}
      */
     private Snapshot loadBuiltInSnapshot() throws SnapshotException {
-        if (builtinSnapshot == null) {
-            try {
-                if (!config.isTestnet() && !SignedFiles.isFileSignatureValid(
-                        config.getSnapshotFile(),
-                        config.getSnapshotSignatureFile(),
-                        SNAPSHOT_PUBKEY,
-                        SNAPSHOT_PUBKEY_DEPTH,
-                        SNAPSHOT_INDEX
-                )) {
-                    throw new SnapshotException("the snapshot signature is invalid");
-                }
-            } catch (IOException e) {
-                throw new SnapshotException("failed to validate the signature of the builtin snapshot file", e);
-            }
-
-            SnapshotState snapshotState;
-            try {
-                snapshotState = readSnapshotStateFromJAR(config.getSnapshotFile());
-            } catch (SnapshotException e) {
-                snapshotState = readSnapshotStatefromFile(config.getSnapshotFile());
-            }
-            if (!snapshotState.hasCorrectSupply()) {
-                throw new SnapshotException("the snapshot state file has an invalid supply");
-            }
-            if (!snapshotState.isConsistent()) {
-                throw new SnapshotException("the snapshot state file is not consistent");
-            }
-
-            HashMap<Hash, Integer> solidEntryPoints = new HashMap<>();
-            solidEntryPoints.put(Hash.NULL_HASH, config.getMilestoneStartIndex());
-
-            builtinSnapshot = new SnapshotImpl(
-                    snapshotState,
-                    new SnapshotMetaDataImpl(
-                            Hash.NULL_HASH,
-                            config.getMilestoneStartIndex(),
-                            config.getSnapshotTime(),
-                            solidEntryPoints,
-                            new HashMap<>()
-                    )
-            );
-        }
-
-        return builtinSnapshot.clone();
+        throw new SnapshotException("CLIRI: Snapshots are not yet implemented");
     }
 
     //endregion ////////////////////////////////////////////////////////////////////////////////////////////////////////
@@ -313,24 +229,6 @@ public class SnapshotProviderImpl implements SnapshotProvider {
             return readSnapshotState(reader);
         } catch (IOException e) {
             throw new SnapshotException("failed to read the snapshot file at " + snapshotStateFilePath, e);
-        }
-    }
-
-    /**
-     * This method reads the balances from the given file in the JAR and creates the corresponding SnapshotState.
-     *
-     * It simply creates the corresponding reader and for the file on the given location in the JAR and passes it on to
-     * {@link #readSnapshotState(BufferedReader)}.
-     *
-     * @param snapshotStateFilePath location of the snapshot state file
-     * @return the unserialized version of the state file
-     * @throws SnapshotException if anything goes wrong while reading the state file
-     */
-    private SnapshotState readSnapshotStateFromJAR(String snapshotStateFilePath) throws SnapshotException {
-        try (BufferedReader reader = new BufferedReader(new InputStreamReader(new BufferedInputStream(SnapshotProviderImpl.class.getResourceAsStream(snapshotStateFilePath))))) {
-            return readSnapshotState(reader);
-        } catch (IOException e) {
-            throw new SnapshotException("failed to read the snapshot file from JAR at " + snapshotStateFilePath, e);
         }
     }
 
