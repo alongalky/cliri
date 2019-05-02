@@ -200,7 +200,7 @@ public class SnapshotProviderImpl implements SnapshotProvider {
      * @throws SnapshotException if local snapshot files exist but are malformed
      */
     private Snapshot loadLocalSnapshot() throws SnapshotException {
-        throw new SnapshotException("CLIRI: Snapshots are not yet implemented");
+        return null;
     }
 
     /**
@@ -216,7 +216,50 @@ public class SnapshotProviderImpl implements SnapshotProvider {
      * @throws SnapshotException if anything goes wrong while loading the builtin {@link Snapshot}
      */
     private Snapshot loadBuiltInSnapshot() throws SnapshotException {
-        throw new SnapshotException("CLIRI: Snapshots are not yet implemented");
+        if (builtinSnapshot == null) {
+            try {
+                if (!config.isTestnet() && !SignedFiles.isFileSignatureValid(
+                        config.getSnapshotFile(),
+                        config.getSnapshotSignatureFile(),
+                        SNAPSHOT_PUBKEY,
+                        SNAPSHOT_PUBKEY_DEPTH,
+                        SNAPSHOT_INDEX
+                )) {
+                    throw new SnapshotException("the snapshot signature is invalid");
+                }
+            } catch (IOException e) {
+                throw new SnapshotException("failed to validate the signature of the builtin snapshot file", e);
+            }
+
+            SnapshotState snapshotState;
+            try {
+                snapshotState = readSnapshotStateFromJAR(config.getSnapshotFile());
+            } catch (SnapshotException e) {
+                snapshotState = readSnapshotStatefromFile(config.getSnapshotFile());
+            }
+            if (!snapshotState.hasCorrectSupply()) {
+                throw new SnapshotException("the snapshot state file has an invalid supply");
+            }
+            if (!snapshotState.isConsistent()) {
+                throw new SnapshotException("the snapshot state file is not consistent");
+            }
+
+            HashMap<Hash, Integer> solidEntryPoints = new HashMap<>();
+            solidEntryPoints.put(Hash.NULL_HASH, config.getMilestoneStartIndex());
+
+            builtinSnapshot = new SnapshotImpl(
+                    snapshotState,
+                    new SnapshotMetaDataImpl(
+                            Hash.NULL_HASH,
+                            config.getMilestoneStartIndex(),
+                            config.getSnapshotTime(),
+                            solidEntryPoints,
+                            new HashMap<>()
+                    )
+            );
+        }
+
+        return builtinSnapshot.clone();
     }
 
     //endregion ////////////////////////////////////////////////////////////////////////////////////////////////////////
@@ -241,6 +284,23 @@ public class SnapshotProviderImpl implements SnapshotProvider {
         }
     }
 
+    /**
+     * This method reads the balances from the given file in the JAR and creates the corresponding SnapshotState.
+     *
+     * It simply creates the corresponding reader and for the file on the given location in the JAR and passes it on to
+     * {@link #readSnapshotState(BufferedReader)}.
+     *
+     * @param snapshotStateFilePath location of the snapshot state file
+     * @return the unserialized version of the state file
+     * @throws SnapshotException if anything goes wrong while reading the state file
+     */
+    private SnapshotState readSnapshotStateFromJAR(String snapshotStateFilePath) throws SnapshotException {
+        try (BufferedReader reader = new BufferedReader(new InputStreamReader(new BufferedInputStream(SnapshotProviderImpl.class.getResourceAsStream(snapshotStateFilePath))))) {
+            return readSnapshotState(reader);
+        } catch (IOException e) {
+            throw new SnapshotException("failed to read the snapshot file from JAR at " + snapshotStateFilePath, e);
+        }
+    }
     /**
      * This method reads the balances from the given reader.
      *
