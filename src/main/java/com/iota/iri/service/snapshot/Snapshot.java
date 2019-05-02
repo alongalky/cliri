@@ -41,28 +41,6 @@ public interface Snapshot extends SnapshotMetaData, SnapshotState {
     void unlockWrite();
 
     /**
-     * This methods allows us to keep track when we skip a milestone when applying changes.
-     *
-     * Since we can only rollback changes if we know which milestones have lead to the current state, we need to keep
-     * track of the milestones that were previously skipped.
-     *
-     * @param skippedMilestoneIndex index of the milestone that was skipped while applying the ledger state
-     * @return true if the index was added and false if it was already part of the set
-     */
-    boolean addSkippedMilestone(int skippedMilestoneIndex);
-
-    /**
-     * This methods allows us to remove a milestone index from the internal list of skipped milestone indexes.
-     *
-     * Since we can only rollback changes if we know which milestones have lead to the current state, we need to keep
-     * track of the milestones that were previously skipped.
-     *
-     * @param skippedMilestoneIndex index of the milestone that was skipped while applying the ledger state
-     * @return true if the skipped milestone was removed from the internal list and false if it was not present
-     */
-    boolean removeSkippedMilestone(int skippedMilestoneIndex);
-
-    /**
      * Replaces the values of this instance with the values of another snapshot object.
      *
      * This can for example be used to "reset" the snapshot after a failed modification attempt (while being able to

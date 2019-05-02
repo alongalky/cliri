@@ -1,13 +1,12 @@
 package com.iota.iri;
 
-import com.iota.iri.conf.MainnetConfig;
 import com.iota.iri.controllers.TipsViewModel;
 import com.iota.iri.controllers.TransactionViewModel;
 import com.iota.iri.crypto.SpongeFactory;
 import com.iota.iri.model.TransactionHash;
 import com.iota.iri.network.TransactionRequester;
+import com.iota.iri.service.snapshot.Snapshot;
 import com.iota.iri.service.snapshot.SnapshotProvider;
-import com.iota.iri.service.snapshot.impl.SnapshotProviderImpl;
 import com.iota.iri.storage.Tangle;
 import com.iota.iri.storage.rocksDB.RocksDBPersistenceProvider;
 import com.iota.iri.utils.Converter;
@@ -15,6 +14,7 @@ import org.junit.AfterClass;
 import org.junit.BeforeClass;
 import org.junit.Test;
 import org.junit.rules.TemporaryFolder;
+import org.mockito.Mockito;
 
 import static com.iota.iri.TransactionTestUtils.*;
 import static org.junit.Assert.assertFalse;
@@ -34,7 +34,9 @@ public class TransactionValidatorTest {
     dbFolder.create();
     logFolder.create();
     tangle = new Tangle();
-    snapshotProvider = new SnapshotProviderImpl().init(new MainnetConfig());
+    snapshotProvider = Mockito.mock(SnapshotProvider.class);
+    Mockito.when(snapshotProvider.getInitialSnapshot())
+      .thenReturn(Mockito.mock(Snapshot.class));
     tangle.addPersistenceProvider(
         new RocksDBPersistenceProvider(
             dbFolder.getRoot().getAbsolutePath(), logFolder.getRoot().getAbsolutePath(),1000, Tangle.COLUMN_FAMILIES, Tangle.METADATA_COLUMN_FAMILY));

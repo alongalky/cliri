@@ -34,14 +34,6 @@ public class SnapshotImpl implements Snapshot {
     private final ReadWriteLock readWriteLock = new ReentrantReadWriteLock();
 
     /**
-     * Holds a set of milestones indexes that were skipped while advancing the Snapshot state.
-     *
-     * It is used to be able to identify which milestones have to be rolled back, even when additional milestones have
-     * become known in the mean time.
-     */
-    private Set<Integer> skippedMilestones = new HashSet<>();
-
-    /**
     /**
      * Creates a snapshot object with the given information.
      *
@@ -65,8 +57,6 @@ public class SnapshotImpl implements Snapshot {
             new SnapshotStateImpl(snapshot.state),
             new SnapshotMetaDataImpl(snapshot.metaData)
         );
-
-        skippedMilestones.addAll(snapshot.skippedMilestones);
     }
 
     /**
@@ -105,22 +95,6 @@ public class SnapshotImpl implements Snapshot {
      * {@inheritDoc}
      */
     @Override
-    public boolean addSkippedMilestone(int skippedMilestoneIndex) {
-        return skippedMilestones.add(skippedMilestoneIndex);
-    }
-
-    /**
-     * {@inheritDoc}
-     */
-    @Override
-    public boolean removeSkippedMilestone(int skippedMilestoneIndex) {
-        return skippedMilestones.remove(skippedMilestoneIndex);
-    }
-
-    /**
-     * {@inheritDoc}
-     */
-    @Override
     public void update(Snapshot snapshot) {
         lockWrite();
 
@@ -134,7 +108,7 @@ public class SnapshotImpl implements Snapshot {
 
     @Override
     public int hashCode() {
-        return Objects.hash(getClass(), state.hashCode(), metaData.hashCode(), skippedMilestones);
+        return Objects.hash(getClass(), state.hashCode(), metaData.hashCode());
     }
 
     @Override
@@ -148,8 +122,7 @@ public class SnapshotImpl implements Snapshot {
         }
 
         return Objects.equals(state, ((SnapshotImpl) obj).state) &&
-               Objects.equals(metaData, ((SnapshotImpl) obj).metaData) &&
-               Objects.equals(skippedMilestones, ((SnapshotImpl) obj).skippedMilestones);
+               Objects.equals(metaData, ((SnapshotImpl) obj).metaData);
     }
 
     @Override
@@ -412,38 +385,6 @@ public class SnapshotImpl implements Snapshot {
             return metaData.getSolidEntryPointIndex(solidEntrypoint);
         } finally {
             unlockRead();
-        }
-    }
-
-    /**
-     * {@inheritDoc}
-     *
-     * This is a thread-safe wrapper for the underlying {@link SnapshotMetaData} method.
-     */
-    @Override
-    public Map<Hash, Integer> getSeenMilestones() {
-        lockRead();
-
-        try {
-            return metaData.getSeenMilestones();
-        } finally {
-            unlockRead();
-        }
-    }
-
-    /**
-     * {@inheritDoc}
-     *
-     * This is a thread-safe wrapper for the underlying {@link SnapshotMetaData} method.
-     */
-    @Override
-    public void setSeenMilestones(Map<Hash, Integer> seenMilestones) {
-        lockWrite();
-
-        try {
-            metaData.setSeenMilestones(seenMilestones);
-        } finally {
-            unlockWrite();
         }
     }
 
