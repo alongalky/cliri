@@ -7,6 +7,7 @@ import com.iota.iri.model.HashFactory;
 import com.iota.iri.service.snapshot.*;
 
 import java.io.*;
+import java.nio.charset.Charset;
 import java.nio.file.Files;
 import java.nio.file.Paths;
 import java.nio.file.StandardCopyOption;
@@ -251,10 +252,7 @@ public class SnapshotProviderImpl implements SnapshotProvider {
                     snapshotState,
                     new SnapshotMetaDataImpl(
                             Hash.NULL_HASH,
-                            config.getMilestoneStartIndex(),
-                            config.getSnapshotTime(),
-                            solidEntryPoints,
-                            new HashMap<>()
+                            config.getSnapshotTime()
                     )
             );
         }
@@ -379,7 +377,7 @@ public class SnapshotProviderImpl implements SnapshotProvider {
                     amountOfSolidEntryPoints);
             Map<Hash, Integer> seenMilestones = readSeenMilestonesFromMetaDataFile(reader, amountOfSeenMilestones);
 
-            return new SnapshotMetaDataImpl(hash, index, timestamp, solidEntryPoints, seenMilestones);
+            return new SnapshotMetaDataImpl(hash, timestamp);
         } catch (IOException e) {
             throw new SnapshotException("failed to read from the snapshot metadata file at " +
                     snapshotMetaDataFile.getAbsolutePath(), e);
@@ -577,30 +575,10 @@ public class SnapshotProviderImpl implements SnapshotProvider {
             throws SnapshotException {
 
         try {
-            Map<Hash, Integer> solidEntryPoints = snapshotMetaData.getSolidEntryPoints();
-            Map<Hash, Integer> seenMilestones = snapshotMetaData.getSeenMilestones();
-
             Files.write(
                     Paths.get(filePath),
-                    () -> Stream.concat(
-                            Stream.of(
-                                    snapshotMetaData.getHash().toString(),
-                                    String.valueOf(snapshotMetaData.getIndex()),
-                                    String.valueOf(snapshotMetaData.getTimestamp()),
-                                    String.valueOf(solidEntryPoints.size()),
-                                    String.valueOf(seenMilestones.size())
-                            ),
-                            Stream.concat(
-                                solidEntryPoints.entrySet()
-                                        .stream()
-                                        .sorted(Map.Entry.comparingByValue())
-                                        .<CharSequence>map(entry -> entry.getKey().toString() + ";" + entry.getValue()),
-                                seenMilestones.entrySet()
-                                        .stream()
-                                        .sorted(Map.Entry.comparingByValue())
-                                        .<CharSequence>map(entry -> entry.getKey().toString() + ";" + entry.getValue())
-                            )
-                    ).iterator()
+                    (snapshotMetaData.getHash().toString() +
+                        String.valueOf(snapshotMetaData.getTimestamp())).getBytes()
             );
         } catch (IOException e) {
             throw new SnapshotException("failed to write snapshot metadata file at " + filePath, e);

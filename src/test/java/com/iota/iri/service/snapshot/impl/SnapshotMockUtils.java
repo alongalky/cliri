@@ -51,8 +51,7 @@ public class SnapshotMockUtils {
 
         Snapshot initialSnapshot = new SnapshotImpl(
                 new SnapshotStateImpl(balances),
-                new SnapshotMetaDataImpl(genesisHash, milestoneStartIndex, genesisTimestamp, solidEntryPoints,
-                        new HashMap<>())
+                new SnapshotMetaDataImpl(genesisHash, genesisTimestamp)
         );
         Snapshot latestSnapshot = initialSnapshot.clone();
 

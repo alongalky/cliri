@@ -170,38 +170,6 @@ public class SnapshotImpl implements Snapshot {
      * This is a thread-safe wrapper for the underlying {@link SnapshotMetaData} method.
      */
     @Override
-    public int getInitialIndex() {
-        lockRead();
-
-        try {
-            return metaData.getInitialIndex();
-        } finally {
-            unlockRead();
-        }
-    }
-
-    /**
-     * {@inheritDoc}
-     *
-     * This is a thread-safe wrapper for the underlying {@link SnapshotMetaData} method.
-     */
-    @Override
-    public void setInitialIndex(int initialIndex) {
-        lockWrite();
-
-        try {
-            metaData.setInitialIndex(initialIndex);
-        } finally {
-            unlockWrite();
-        }
-    }
-
-    /**
-     * {@inheritDoc}
-     *
-     * This is a thread-safe wrapper for the underlying {@link SnapshotMetaData} method.
-     */
-    @Override
     public long getInitialTimestamp() {
         lockRead();
 
@@ -321,70 +289,6 @@ public class SnapshotImpl implements Snapshot {
             metaData.setTimestamp(timestamp);
         } finally {
             unlockWrite();
-        }
-    }
-
-    /**
-     * {@inheritDoc}
-     *
-     * This is a thread-safe wrapper for the underlying {@link SnapshotMetaData} method.
-     */
-    @Override
-    public Map<Hash, Integer> getSolidEntryPoints() {
-        lockRead();
-
-        try {
-            return metaData.getSolidEntryPoints();
-        } finally {
-            unlockRead();
-        }
-    }
-
-    /**
-     * {@inheritDoc}
-     *
-     * This is a thread-safe wrapper for the underlying {@link SnapshotMetaData} method.
-     */
-    @Override
-    public void setSolidEntryPoints(Map<Hash, Integer> solidEntryPoints) {
-        lockWrite();
-
-        try {
-            metaData.setSolidEntryPoints(solidEntryPoints);
-        } finally {
-            unlockWrite();
-        }
-    }
-
-    /**
-     * {@inheritDoc}
-     *
-     * This is a thread-safe wrapper for the underlying {@link SnapshotMetaData} method.
-     */
-    @Override
-    public boolean hasSolidEntryPoint(Hash solidEntrypoint) {
-        lockRead();
-
-        try {
-            return metaData.hasSolidEntryPoint(solidEntrypoint);
-        } finally {
-            unlockRead();
-        }
-    }
-
-    /**
-     * {@inheritDoc}
-     *
-     * This is a thread-safe wrapper for the underlying {@link SnapshotMetaData} method.
-     */
-    @Override
-    public int getSolidEntryPointIndex(Hash solidEntrypoint) {
-        lockRead();
-
-        try {
-            return metaData.getSolidEntryPointIndex(solidEntrypoint);
-        } finally {
-            unlockRead();
         }
     }
 

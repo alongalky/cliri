@@ -63,8 +63,7 @@ public class SnapshotMetaDataImpl implements SnapshotMetaData {
      *                         index
      * @param seenMilestones map of milestone transaction hashes associated to their milestone index
      */
-    public SnapshotMetaDataImpl(Hash hash, int index, Long timestamp, Map<Hash, Integer> solidEntryPoints,
-                                Map<Hash, Integer> seenMilestones) {
+    public SnapshotMetaDataImpl(Hash hash, Long timestamp) {
 
         this.initialHash = hash;
         this.initialIndex = index;
@@ -73,8 +72,6 @@ public class SnapshotMetaDataImpl implements SnapshotMetaData {
         setHash(hash);
         setIndex(index);
         setTimestamp(timestamp);
-        setSolidEntryPoints(new HashMap<>(solidEntryPoints));
-        setSeenMilestones(new HashMap<>(seenMilestones));
     }
 
     /**
@@ -83,9 +80,7 @@ public class SnapshotMetaDataImpl implements SnapshotMetaData {
      * @param snapshotMetaData object that shall be cloned
      */
     public SnapshotMetaDataImpl(SnapshotMetaData snapshotMetaData) {
-        this(snapshotMetaData.getInitialHash(), snapshotMetaData.getInitialIndex(),
-                snapshotMetaData.getInitialTimestamp(), snapshotMetaData.getSolidEntryPoints(),
-                snapshotMetaData.getSeenMilestones());
+        this(snapshotMetaData.getInitialHash(), snapshotMetaData.getInitialTimestamp());
 
         this.setIndex(snapshotMetaData.getIndex());
         this.setHash(snapshotMetaData.getHash());
@@ -106,22 +101,6 @@ public class SnapshotMetaDataImpl implements SnapshotMetaData {
     @Override
     public void setInitialHash(Hash initialHash) {
         this.initialHash = initialHash;
-    }
-
-    /**
-     * {@inheritDoc}
-     */
-    @Override
-    public int getInitialIndex() {
-        return initialIndex;
-    }
-
-    /**
-     * {@inheritDoc}
-     */
-    @Override
-    public void setInitialIndex(int initialIndex) {
-        this.initialIndex = initialIndex;
     }
 
     /**
@@ -192,64 +171,12 @@ public class SnapshotMetaDataImpl implements SnapshotMetaData {
      * {@inheritDoc}
      */
     @Override
-    public Map<Hash, Integer> getSolidEntryPoints() {
-        return solidEntryPoints;
-    }
-
-    /**
-     * {@inheritDoc}
-     */
-    @Override
-    public void setSolidEntryPoints(Map<Hash, Integer> solidEntryPoints) {
-        this.solidEntryPoints = solidEntryPoints;
-    }
-
-    /**
-     * {@inheritDoc}
-     */
-    @Override
-    public boolean hasSolidEntryPoint(Hash solidEntrypoint) {
-        return solidEntryPoints.containsKey(solidEntrypoint);
-    }
-
-    /**
-     * {@inheritDoc}
-     */
-    @Override
-    public int getSolidEntryPointIndex(Hash solidEntrypoint) {
-        return solidEntryPoints.get(solidEntrypoint);
-    }
-
-    /**
-     * {@inheritDoc}
-     */
-    @Override
-    public Map<Hash, Integer> getSeenMilestones() {
-        return seenMilestones;
-    }
-
-    /**
-     * {@inheritDoc}
-     */
-    @Override
-    public void setSeenMilestones(Map<Hash, Integer> seenMilestones) {
-        this.seenMilestones = seenMilestones;
-    }
-
-    /**
-     * {@inheritDoc}
-     */
-    @Override
     public void update(SnapshotMetaData newMetaData) {
-        initialIndex = newMetaData.getInitialIndex();
         initialHash = newMetaData.getInitialHash();
         initialTimestamp = newMetaData.getInitialTimestamp();
 
-        setIndex(newMetaData.getIndex());
         setHash(newMetaData.getHash());
         setTimestamp(newMetaData.getTimestamp());
-        setSolidEntryPoints(new HashMap<>(newMetaData.getSolidEntryPoints()));
-        setSeenMilestones(new HashMap<>(newMetaData.getSeenMilestones()));
     }
 
     @Override
