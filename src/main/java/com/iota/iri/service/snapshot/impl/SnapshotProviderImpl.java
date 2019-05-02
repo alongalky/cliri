@@ -1,6 +1,7 @@
 package com.iota.iri.service.snapshot.impl;
 
 import com.iota.iri.SignedFiles;
+import com.iota.iri.conf.SnapshotConfig;
 import com.iota.iri.model.Hash;
 import com.iota.iri.model.HashFactory;
 import com.iota.iri.service.snapshot.*;
@@ -62,6 +63,11 @@ public class SnapshotProviderImpl implements SnapshotProvider {
     private static SnapshotImpl builtinSnapshot = null;
 
     /**
+     * Holds Snapshot related configuration parameters.
+     */
+    private SnapshotConfig config;
+
+    /**
      * Internal property for the value returned by {@link SnapshotProvider#getInitialSnapshot()}.
      */
     private Snapshot initialSnapshot;
@@ -83,11 +89,14 @@ public class SnapshotProviderImpl implements SnapshotProvider {
      *       <br />
      *       {@code snapshotProvider = new SnapshotProviderImpl().init(...);}
      *
+     * @param config Snapshot related configuration parameters
      * @throws SnapshotException if anything goes wrong while trying to read the snapshots
      * @return the initialized instance itself to allow chaining
      *
      */
-    public SnapshotProviderImpl init() throws SnapshotException {
+    public SnapshotProviderImpl init(SnapshotConfig config) throws SnapshotException {
+        this.config = config;
+
         loadSnapshots();
 
         return this;
