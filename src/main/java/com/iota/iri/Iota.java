@@ -222,7 +222,7 @@ public class Iota {
     private TipSelector createTipSelector(TipSelConfig config) {
         RatingCalculator ratingCalculator = new CumulativeWeightCalculator(tangle);
         TailFinder tailFinder = new TailFinderImpl(tangle);
-        Walker walker = new WalkerAlpha(tailFinder, tangle, new SecureRandom(), config);
+        Walker walker = new WalkerAlpha(tailFinder, tangle, new SecureRandom());
         StartingTipSelector startingTipSelector = new ConnectedComponentsStartingTipSelector(tangle, CumulativeWeightCalculator.MAX_FUTURE_SET_SIZE, tipsViewModel);
         EntryPointSelector entryPointSelector = new EntryPointSelectorCumulativeWeightThreshold(
             tangle, CumulativeWeightCalculator.MAX_FUTURE_SET_SIZE, startingTipSelector, tailFinder);

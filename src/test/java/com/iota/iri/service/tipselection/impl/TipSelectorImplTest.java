@@ -4,7 +4,6 @@ import java.util.ArrayList;
 import java.util.Collections;
 import java.util.List;
 
-import com.iota.iri.conf.TipSelConfig;
 import com.iota.iri.model.Hash;
 import com.iota.iri.model.HashId;
 import com.iota.iri.service.ledger.LedgerService;
@@ -34,7 +33,6 @@ public class TipSelectorImplTest {
     private static ReferenceChecker referenceChecker;
     private static SnapshotProvider snapshotProvider;
     private static LedgerService ledgerService;
-    private static TipSelConfig config;
 
     @AfterClass
     public static void tearDown() throws Exception {
@@ -66,7 +64,6 @@ public class TipSelectorImplTest {
 
         snapshotProvider = Mockito.mock(SnapshotProvider.class);
         ledgerService = Mockito.mock(LedgerService.class);
-        config = Mockito.mock(TipSelConfig.class);
     }
 
     @Test

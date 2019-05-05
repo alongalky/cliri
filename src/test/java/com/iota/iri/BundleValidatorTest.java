@@ -1,10 +1,8 @@
 package com.iota.iri;
 
-import com.iota.iri.conf.MainnetConfig;
 import com.iota.iri.crypto.SpongeFactory;
 import com.iota.iri.model.TransactionHash;
 import com.iota.iri.service.snapshot.SnapshotProvider;
-import com.iota.iri.service.snapshot.impl.SnapshotProviderImpl;
 import com.iota.iri.storage.Tangle;
 import com.iota.iri.storage.rocksDB.RocksDBPersistenceProvider;
 import com.iota.iri.utils.Converter;
@@ -13,6 +11,7 @@ import org.junit.AfterClass;
 import org.junit.BeforeClass;
 import org.junit.Test;
 import org.junit.rules.TemporaryFolder;
+import org.mockito.Mockito;
 
 import java.util.Arrays;
 import java.util.List;
@@ -33,7 +32,7 @@ public class BundleValidatorTest {
                         logFolder.getRoot().getAbsolutePath(), 1000, Tangle.COLUMN_FAMILIES,
                         Tangle.METADATA_COLUMN_FAMILY));
         tangle.init();
-        snapshotProvider = new SnapshotProviderImpl().init(new MainnetConfig());
+        snapshotProvider = Mockito.mock(SnapshotProvider.class);
     }
 
     @AfterClass

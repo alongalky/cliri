@@ -1,6 +1,5 @@
 package com.iota.iri.service.tipselection.impl;
 
-import com.iota.iri.conf.TipSelConfig;
 import com.iota.iri.controllers.ApproveeViewModel;
 import com.iota.iri.model.Hash;
 import com.iota.iri.model.HashId;
@@ -40,13 +39,11 @@ public class WalkerAlpha implements Walker {
      * @param tailFinder instance of tailFinder, used to step from tail to tail in random walk.
      * @param tangle Tangle object which acts as a database interface
      * @param random a source of randomness.
-     * @param config configurations to set internal parameters.
      */
-    public WalkerAlpha(TailFinder tailFinder, Tangle tangle, Random random, TipSelConfig config) {
+    public WalkerAlpha(TailFinder tailFinder, Tangle tangle, Random random) {
         this.tangle = tangle;
         this.tailFinder = tailFinder;
         this.random = random;
-        this.alpha = config.getAlpha();
     }
 
     /**

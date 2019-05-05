@@ -2,7 +2,6 @@ package com.iota.iri.network;
 
 import com.iota.iri.controllers.TransactionViewModel;
 import com.iota.iri.model.Hash;
-import com.iota.iri.service.snapshot.Snapshot;
 import com.iota.iri.storage.Tangle;
 import org.apache.commons.lang3.ArrayUtils;
 import org.slf4j.Logger;
@@ -17,7 +16,6 @@ import java.util.*;
 public class TransactionRequester {
 
     private static final Logger log = LoggerFactory.getLogger(TransactionRequester.class);
-    private final Set<Hash> milestoneTransactionsToRequest = new LinkedHashSet<>();
     private final Set<Hash> transactionsToRequest = new LinkedHashSet<>();
 
     public static final int MAX_TX_REQ_QUEUE_SIZE = 10000;
@@ -33,7 +31,6 @@ public class TransactionRequester {
      * Create {@link TransactionRequester} for receiving transactions from the tangle.
      *
      * @param tangle used to request transaction
-     * @param snapshotProvider that allows to retrieve the {@link Snapshot} instances that are relevant for the node
      */
     public TransactionRequester(Tangle tangle) {
         this.tangle = tangle;
@@ -48,32 +45,27 @@ public class TransactionRequester {
 
     public Hash[] getRequestedTransactions() {
         synchronized (syncObj) {
-            return ArrayUtils.addAll(transactionsToRequest.stream().toArray(Hash[]::new),
-                    milestoneTransactionsToRequest.stream().toArray(Hash[]::new));
+            return ArrayUtils.addAll(transactionsToRequest.toArray(new Hash[0]));
         }
     }
 
     public int numberOfTransactionsToRequest() {
-        return transactionsToRequest.size() + milestoneTransactionsToRequest.size();
+        return transactionsToRequest.size();
     }
 
     public boolean clearTransactionRequest(Hash hash) {
         synchronized (syncObj) {
-            boolean milestone = milestoneTransactionsToRequest.remove(hash);
-            boolean normal = transactionsToRequest.remove(hash);
-            return normal || milestone;
+            return transactionsToRequest.remove(hash);
         }
     }
 
     public void requestTransaction(Hash hash) throws Exception {
         if (!hash.equals(Hash.NULL_HASH) && !TransactionViewModel.exists(tangle, hash)) {
             synchronized (syncObj) {
-                if(!milestoneTransactionsToRequest.contains(hash)) {
-                    if (transactionsToRequestIsFull()) {
-                        popEldestTransactionToRequest();
-                    }
-                    transactionsToRequest.add(hash);
+                if (transactionsToRequestIsFull()) {
+                    popEldestTransactionToRequest();
                 }
+                transactionsToRequest.add(hash);
             }
         }
     }

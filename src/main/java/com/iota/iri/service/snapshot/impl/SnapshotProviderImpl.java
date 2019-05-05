@@ -13,9 +13,6 @@ import java.nio.file.StandardCopyOption;
 import java.util.HashMap;
 import java.util.Map;
 
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
-
 /**
  * Creates a data provider for the two {@link Snapshot} instances that are relevant for the node.<br />
  * <br />
@@ -46,11 +43,6 @@ public class SnapshotProviderImpl implements SnapshotProvider {
      * Snapshot index that is used to verify the builtin snapshot signature.
      */
     private static final int SNAPSHOT_INDEX = 12;
-
-    /**
-     * Logger for this class allowing us to dump debug and status messages.
-     */
-    private static final Logger log = LoggerFactory.getLogger(SnapshotProviderImpl.class);
 
     /**
      * Holds a cached version of the builtin snapshot.

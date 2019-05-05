@@ -1,13 +1,12 @@
 package com.iota.iri.network;
 
-import com.iota.iri.conf.MainnetConfig;
 import com.iota.iri.model.Hash;
 import com.iota.iri.service.snapshot.SnapshotProvider;
-import com.iota.iri.service.snapshot.impl.SnapshotProviderImpl;
 import com.iota.iri.storage.Tangle;
 import org.junit.After;
 import org.junit.Before;
 import org.junit.Test;
+import org.mockito.Mockito;
 
 import static com.iota.iri.TransactionTestUtils.getRandomTransactionHash;
 
@@ -24,7 +23,7 @@ public class TransactionRequesterTest {
 
     @Before
     public void setUp() throws Exception {
-        snapshotProvider = new SnapshotProviderImpl().init(new MainnetConfig());
+        snapshotProvider = Mockito.mock(SnapshotProvider.class);
     }
 
     @After
@@ -131,32 +130,4 @@ public class TransactionRequesterTest {
         //check that limit wasn't breached
         assertEquals(capacity, txReq.numberOfTransactionsToRequest());
     }
-
-    @Test
-    public void milestoneCapacityNotLimited() throws Exception {
-        TransactionRequester txReq = new TransactionRequester(tangle);
-        int capacity = TransactionRequester.MAX_TX_REQ_QUEUE_SIZE;
-        //fill tips list
-        for (int i = 0; i < capacity * 2 ; i++) {
-            Hash hash = getRandomTransactionHash();
-            txReq.requestTransaction(hash);
-        }
-        //check that limit was surpassed
-        assertEquals(capacity * 2, txReq.numberOfTransactionsToRequest());
-    }
-
-    @Test
-    public void mixedCapacityLimited() throws Exception {
-        TransactionRequester txReq = new TransactionRequester(tangle);
-        int capacity = TransactionRequester.MAX_TX_REQ_QUEUE_SIZE;
-        //fill tips list
-        for (int i = 0; i < capacity * 4 ; i++) {
-            Hash hash = getRandomTransactionHash();
-            txReq.requestTransaction(hash);
-
-        }
-        //check that limit wasn't breached
-        assertEquals(capacity + capacity * 2, txReq.numberOfTransactionsToRequest());
-    }
-
 }

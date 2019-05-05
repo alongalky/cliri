@@ -1,11 +1,9 @@
 package com.iota.iri.service.tipselection.impl;
 
-import com.iota.iri.conf.MainnetConfig;
 import com.iota.iri.controllers.TransactionViewModel;
 import com.iota.iri.model.Hash;
 import com.iota.iri.model.HashId;
 import com.iota.iri.service.snapshot.SnapshotProvider;
-import com.iota.iri.service.snapshot.impl.SnapshotProviderImpl;
 import com.iota.iri.service.tipselection.RatingCalculator;
 import com.iota.iri.service.tipselection.TailFinder;
 import com.iota.iri.storage.Tangle;
@@ -49,7 +47,7 @@ public class WalkerAlphaTest {
     @BeforeClass
     public static void setUp() throws Exception {
         tangle = new Tangle();
-        snapshotProvider = new SnapshotProviderImpl().init(new MainnetConfig());
+        snapshotProvider = Mockito.mock(SnapshotProvider.class);
         dbFolder.create();
         logFolder.create();
         tangle.addPersistenceProvider( new RocksDBPersistenceProvider(
@@ -60,7 +58,7 @@ public class WalkerAlphaTest {
         TailFinder tailFinder = Mockito.mock(TailFinder.class);
         Mockito.when(tailFinder.findTail(Mockito.any(Hash.class)))
                 .then(args -> Optional.of(args.getArgumentAt(0, Hash.class)));
-        walker = new WalkerAlpha(tailFinder, tangle, new Random(1), new MainnetConfig());
+        walker = new WalkerAlpha(tailFinder, tangle, new Random(1));
     }
 
 

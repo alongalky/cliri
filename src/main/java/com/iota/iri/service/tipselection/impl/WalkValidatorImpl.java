@@ -1,5 +1,4 @@
 package com.iota.iri.service.tipselection.impl;
-
 import com.iota.iri.controllers.TransactionViewModel;
 import com.iota.iri.model.Hash;
 import com.iota.iri.service.ledger.LedgerService;
