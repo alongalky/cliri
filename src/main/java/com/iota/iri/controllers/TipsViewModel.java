@@ -30,7 +30,6 @@ public class TipsViewModel {
     private final SecureRandom seed = new SecureRandom();
     private final Object sync = new Object();
 
-
     public TipsViewModel(Tangle tangle) {
         this.tangle = tangle;
     }
@@ -224,7 +223,8 @@ public class TipsViewModel {
 
             Set<Hash> solidApprovers = new HashSet<>();
             for (Hash approver : approvers) {
-                if (TransactionViewModel.fromHash(tangle, approver).isSolid()) {
+                // Add solid approvers, and ignore the genesis (which approves itself)
+                if (TransactionViewModel.fromHash(tangle, approver).isSolid() && !approver.equals(Hash.NULL_HASH)) {
                     solidApprovers.add(approver);
                 }
             }
