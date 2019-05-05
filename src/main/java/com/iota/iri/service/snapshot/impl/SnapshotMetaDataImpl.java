@@ -3,7 +3,6 @@ package com.iota.iri.service.snapshot.impl;
 import com.iota.iri.model.Hash;
 import com.iota.iri.service.snapshot.SnapshotMetaData;
 
-import java.util.HashMap;
 import java.util.Map;
 import java.util.Objects;
 

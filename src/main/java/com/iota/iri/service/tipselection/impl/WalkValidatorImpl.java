@@ -1,6 +1,5 @@
 package com.iota.iri.service.tipselection.impl;
 
-import com.iota.iri.conf.TipSelConfig;
 import com.iota.iri.controllers.TransactionViewModel;
 import com.iota.iri.model.Hash;
 import com.iota.iri.service.ledger.LedgerService;
@@ -27,7 +26,6 @@ public class WalkValidatorImpl implements WalkValidator {
     private final Tangle tangle;
     private final Logger log = LoggerFactory.getLogger(WalkValidator.class);
     private final LedgerService ledgerService;
-    private final TipSelConfig config;
 
     private Map<Hash, Long> myDiff;
     private Set<Hash> myApprovedHashes;
@@ -38,11 +36,9 @@ public class WalkValidatorImpl implements WalkValidator {
      * @param ledgerService allows to perform ledger related logic.
      * @param config configurations to set internal parameters.
      */
-    public WalkValidatorImpl(Tangle tangle, LedgerService ledgerService,
-                             TipSelConfig config) {
+    public WalkValidatorImpl(Tangle tangle, LedgerService ledgerService) {
         this.tangle = tangle;
         this.ledgerService = ledgerService;
-        this.config = config;
 
         myDiff = new HashMap<>();
         myApprovedHashes = new HashSet<>();

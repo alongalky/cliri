@@ -65,7 +65,7 @@ public class TransactionRequesterWorkerImplTest {
 
     @Before
     public void before() {
-        requester = new TransactionRequester(tangle, snapshotProvider);
+        requester = new TransactionRequester(tangle);
         
         worker = new TransactionRequesterWorkerImpl();
         worker.init(tangle, requester, tipsVM, node);

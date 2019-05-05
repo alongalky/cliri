@@ -2,7 +2,6 @@ package com.iota.iri.controllers;
 
 import com.iota.iri.model.*;
 import com.iota.iri.model.persistables.*;
-import com.iota.iri.service.snapshot.Snapshot;
 import com.iota.iri.storage.Indexable;
 import com.iota.iri.storage.Persistable;
 import com.iota.iri.storage.Tangle;

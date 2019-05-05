@@ -7,10 +7,8 @@ import com.iota.iri.service.snapshot.SnapshotMetaData;
 import com.iota.iri.service.snapshot.SnapshotState;
 import com.iota.iri.service.snapshot.SnapshotStateDiff;
 
-import java.util.HashSet;
 import java.util.Map;
 import java.util.Objects;
-import java.util.Set;
 import java.util.concurrent.locks.ReadWriteLock;
 import java.util.concurrent.locks.ReentrantReadWriteLock;
 

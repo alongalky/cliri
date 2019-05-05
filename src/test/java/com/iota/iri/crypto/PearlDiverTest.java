@@ -1,7 +1,6 @@
 package com.iota.iri.crypto;
 
 import com.iota.iri.TransactionTestUtils;
-import com.iota.iri.controllers.TransactionViewModelTest;
 import com.iota.iri.model.Hash;
 import com.iota.iri.model.TransactionHash;
 import com.iota.iri.utils.Converter;

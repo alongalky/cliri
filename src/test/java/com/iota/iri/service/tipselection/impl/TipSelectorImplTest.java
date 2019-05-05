@@ -72,7 +72,7 @@ public class TipSelectorImplTest {
     @Test
     public void testGetConfidencesReturnsEmptyListWhenGettingEmptyList() throws Exception {
         TipSelectorImpl tipSelector = new TipSelectorImpl(tangle, snapshotProvider,
-            ledgerService, entryPointSelector, ratingCalculator, walker, referenceChecker, config);
+            ledgerService, entryPointSelector, ratingCalculator, walker, referenceChecker);
 
         List<Hash> inputs = new ArrayList<>();
 
@@ -84,7 +84,7 @@ public class TipSelectorImplTest {
     @Test
     public void testGetConfidencesAllOneWhenReferenceAlwaysTrue() throws Exception {
         TipSelectorImpl tipSelector = new TipSelectorImpl(tangle, snapshotProvider,
-            ledgerService, entryPointSelector, ratingCalculator, walker, referenceChecker, config);
+            ledgerService, entryPointSelector, ratingCalculator, walker, referenceChecker);
 
         List<Hash> inputs = Collections.nCopies(3, Hash.NULL_HASH);
 
@@ -99,7 +99,7 @@ public class TipSelectorImplTest {
     @Test
     public void testGetConfidencesOverHalfWhenOnlyThreeTipsDontReference() throws Exception {
         TipSelectorImpl tipSelector = new TipSelectorImpl(tangle, snapshotProvider,
-            ledgerService, entryPointSelector, ratingCalculator, walker, referenceChecker, config);
+            ledgerService, entryPointSelector, ratingCalculator, walker, referenceChecker);
 
         List<Hash> inputs = Collections.nCopies(1, Hash.NULL_HASH);
         // Returns false the first three times and then true for all consecutive calls

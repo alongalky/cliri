@@ -2,11 +2,9 @@ package com.iota.iri.storage;
 
 import com.iota.iri.controllers.TransactionViewModel;
 import com.iota.iri.crypto.SpongeFactory;
-import com.iota.iri.model.Hash;
 import com.iota.iri.model.TransactionHash;
 import com.iota.iri.model.persistables.Tag;
 import com.iota.iri.storage.rocksDB.RocksDBPersistenceProvider;
-import com.iota.iri.utils.Converter;
 import org.junit.After;
 import org.junit.Assert;
 import org.junit.Before;

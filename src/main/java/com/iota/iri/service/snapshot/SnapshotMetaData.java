@@ -2,8 +2,6 @@ package com.iota.iri.service.snapshot;
 
 import com.iota.iri.model.Hash;
 
-import java.util.Map;
-
 /**
  * Represents the meta data of a snapshot.
  *

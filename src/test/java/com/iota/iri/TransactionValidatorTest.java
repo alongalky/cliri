@@ -42,7 +42,7 @@ public class TransactionValidatorTest {
             dbFolder.getRoot().getAbsolutePath(), logFolder.getRoot().getAbsolutePath(),1000, Tangle.COLUMN_FAMILIES, Tangle.METADATA_COLUMN_FAMILY));
     tangle.init();
     TipsViewModel tipsViewModel = new TipsViewModel(tangle);
-    TransactionRequester txRequester = new TransactionRequester(tangle, snapshotProvider);
+    TransactionRequester txRequester = new TransactionRequester(tangle);
     txValidator = new TransactionValidator(tangle, tipsViewModel, txRequester);
     txValidator.setMwm(false, MAINNET_MWM);
   }

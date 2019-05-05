@@ -79,7 +79,7 @@ public class TransactionRequesterTest {
 
     @Test
     public void popEldestTransactionToRequest() throws Exception {
-        TransactionRequester txReq = new TransactionRequester(tangle, snapshotProvider);
+        TransactionRequester txReq = new TransactionRequester(tangle);
         // Add some Txs to the pool and see if the method pops the eldest one
         Hash eldest = getRandomTransactionHash();
         txReq.requestTransaction(eldest);
@@ -100,7 +100,7 @@ public class TransactionRequesterTest {
                 getRandomTransactionHash(),
                 getRandomTransactionHash()
         ));
-        TransactionRequester txReq = new TransactionRequester(tangle, snapshotProvider);
+        TransactionRequester txReq = new TransactionRequester(tangle);
         int capacity = TransactionRequester.MAX_TX_REQ_QUEUE_SIZE;
         //fill tips list
         for (int i = 0; i < 3; i++) {
@@ -121,7 +121,7 @@ public class TransactionRequesterTest {
 
     @Test
     public void nonMilestoneCapacityLimited() throws Exception {
-        TransactionRequester txReq = new TransactionRequester(tangle, snapshotProvider);
+        TransactionRequester txReq = new TransactionRequester(tangle);
         int capacity = TransactionRequester.MAX_TX_REQ_QUEUE_SIZE;
         //fill tips list
         for (int i = 0; i < capacity * 2 ; i++) {
@@ -134,7 +134,7 @@ public class TransactionRequesterTest {
 
     @Test
     public void milestoneCapacityNotLimited() throws Exception {
-        TransactionRequester txReq = new TransactionRequester(tangle, snapshotProvider);
+        TransactionRequester txReq = new TransactionRequester(tangle);
         int capacity = TransactionRequester.MAX_TX_REQ_QUEUE_SIZE;
         //fill tips list
         for (int i = 0; i < capacity * 2 ; i++) {
@@ -147,7 +147,7 @@ public class TransactionRequesterTest {
 
     @Test
     public void mixedCapacityLimited() throws Exception {
-        TransactionRequester txReq = new TransactionRequester(tangle, snapshotProvider);
+        TransactionRequester txReq = new TransactionRequester(tangle);
         int capacity = TransactionRequester.MAX_TX_REQ_QUEUE_SIZE;
         //fill tips list
         for (int i = 0; i < capacity * 4 ; i++) {

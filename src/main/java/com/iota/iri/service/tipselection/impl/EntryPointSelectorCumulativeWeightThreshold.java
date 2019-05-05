@@ -9,8 +9,6 @@ import com.iota.iri.service.tipselection.StartingTipSelector;
 import com.iota.iri.service.tipselection.TailFinder;
 import com.iota.iri.storage.Tangle;
 
-import org.apache.commons.lang3.NotImplementedException;
-
 /**
  * Implementation of <tt>EntryPointSelector</tt> that backtracks via trunkTransaction 
  * until reaching a minimum Cumulative Weight or the genesis.

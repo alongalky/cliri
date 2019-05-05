@@ -2,12 +2,10 @@ package com.iota.iri;
 
 import com.iota.iri.controllers.TransactionViewModel;
 import com.iota.iri.model.Hash;
-import com.iota.iri.model.IntegerIndex;
 import com.iota.iri.model.StateDiff;
 import com.iota.iri.model.persistables.Transaction;
 import com.iota.iri.storage.Tangle;
 import com.iota.iri.utils.Converter;
-import com.iota.iri.utils.IotaUtils;
 import com.iota.iri.utils.Pair;
 
 import org.mockito.Mockito;

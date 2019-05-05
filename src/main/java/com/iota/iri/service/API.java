@@ -3,7 +3,6 @@ package com.iota.iri.service;
 import com.google.gson.Gson;
 import com.google.gson.GsonBuilder;
 import com.google.gson.JsonSyntaxException;
-import com.iota.iri.BundleValidator;
 import com.iota.iri.CLIRI;
 import com.iota.iri.IXI;
 import com.iota.iri.Iota;
@@ -19,7 +18,6 @@ import com.iota.iri.model.persistables.Transaction;
 import com.iota.iri.network.Neighbor;
 import com.iota.iri.service.dto.*;
 import com.iota.iri.service.tipselection.TipSelector;
-import com.iota.iri.service.tipselection.impl.WalkValidatorImpl;
 import com.iota.iri.utils.Converter;
 import com.iota.iri.utils.IotaIOUtils;
 import com.iota.iri.utils.IotaUtils;
@@ -658,15 +656,6 @@ public class API {
         return ellapsedTime_getTxToApprove;
     }
     
-    /**
-     * Increases the current amount of time spent on sending transactions to approve
-     * 
-     * @param ellapsedTime the time to add, in milliseconds
-     */
-    private static void incEllapsedTimeGetTxToApprove(long ellapsedTime) {
-        ellapsedTime_getTxToApprove += ellapsedTime;
-    }
-
     /**
      * <p>
      *     Get the confirmation confidences for a set of transactions.

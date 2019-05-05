@@ -5,7 +5,6 @@ import com.iota.iri.crypto.SpongeFactory;
 import com.iota.iri.model.Hash;
 import com.iota.iri.model.HashFactory;
 import com.iota.iri.model.TransactionHash;
-import com.iota.iri.model.persistables.Transaction;
 import com.iota.iri.storage.Tangle;
 import com.iota.iri.storage.rocksDB.RocksDBPersistenceProvider;
 import com.iota.iri.utils.Converter;
@@ -398,18 +397,6 @@ public class TransactionViewModelTest {
         log.info("Done. #TX: {}", TransactionViewModel.getNumberOfStoredTransactions(tangle));
     }
 
-    private Transaction getRandomTransaction(Random seed) {
-        Transaction transaction = new Transaction();
-
-        byte[] trits = new byte[TransactionViewModel.SIGNATURE_MESSAGE_FRAGMENT_TRINARY_SIZE];
-        for(int i = 0; i < trits.length; i++) {
-            trits[i] = (byte) (seed.nextInt(3) - 1);
-        }
-
-        transaction.bytes = Converter.allocateBytesForTrits(trits.length);
-        Converter.bytes(trits, 0, transaction.bytes, 0, trits.length);
-        return transaction;
-    }
     public static byte[] getRandomTransactionWithTrunkAndBranch(Hash trunk, Hash branch) {
         byte[] trits = getRandomTransactionTrits();
         System.arraycopy(trunk.trits(), 0, trits, TransactionViewModel.TRUNK_TRANSACTION_TRINARY_OFFSET,

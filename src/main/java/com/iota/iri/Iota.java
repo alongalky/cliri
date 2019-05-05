@@ -103,7 +103,7 @@ public class Iota {
         bundleValidator = new BundleValidator();
         tangle = new Tangle();
         tipsViewModel = new TipsViewModel(tangle);
-        transactionRequester = new TransactionRequester(tangle, snapshotProvider);
+        transactionRequester = new TransactionRequester(tangle);
         transactionValidator = new TransactionValidator(tangle, tipsViewModel, transactionRequester);
         node = new Node(tangle, transactionValidator, transactionRequester, tipsViewModel, configuration);
         replicator = new Replicator(node, configuration);
@@ -151,8 +151,7 @@ public class Iota {
         //snapshot provider must be initialized first
         //because we check whether spent addresses data exists
         snapshotProvider.init(configuration);
-        ledgerService.init(tangle, snapshotProvider,
-            bundleValidator);
+        ledgerService.init(tangle, snapshotProvider);
         transactionRequesterWorker.init(tangle, transactionRequester, tipsViewModel, node);
     }
 
@@ -229,6 +228,6 @@ public class Iota {
             tangle, CumulativeWeightCalculator.MAX_FUTURE_SET_SIZE, startingTipSelector, tailFinder);
         ReferenceChecker referenceChecker = new ReferenceCheckerImpl(tangle);
         return new TipSelectorImpl(tangle, snapshotProvider, ledgerService, entryPointSelector, ratingCalculator,
-            walker, referenceChecker, config);
+            walker, referenceChecker);
     }
 }
